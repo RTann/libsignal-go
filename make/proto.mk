@@ -1,9 +1,13 @@
 BASE_DIR ?= $(CURDIR)
+SILENT ?= @
 
 # Protocol Buffers
 
 PROTOC_VERSION := 22.2
-PROTOC_DIR := $(BASE_DIR)/bin
+
+PROTOC_DIR := $(BASE_DIR)/.proto
+$(PROTOC_DIR):
+	$(SILENT)mkdir -p "$@"
 
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Linux)
@@ -16,7 +20,7 @@ PROTOC_ARCH=$(shell case $$(uname -m) in (arm64) echo aarch_64 ;; (*) uname -m ;
 
 DOWNLOAD_DIR := $(PROTOC_DIR)/.downloads
 $(DOWNLOAD_DIR):
-	mkdir -p "$@"
+	$(SILENT)mkdir -p "$@"
 
 PROTOC_ZIP := protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH).zip
 PROTOC_FILE := $(DOWNLOAD_DIR)/$(PROTOC_ZIP)
@@ -25,13 +29,18 @@ PROTOC_FILE := $(DOWNLOAD_DIR)/$(PROTOC_ZIP)
 $(PROTOC_FILE): $(DOWNLOAD_DIR)
 	curl --output-dir $(DOWNLOAD_DIR) -LO "https://github.com/protocolbuffers/protobuf/releases/download/v$(PROTOC_VERSION)/$(PROTOC_ZIP)"
 
-PROTOC := $(PROTOC_DIR)/bin/protoc
+PROTO_BIN := $(PROTOC_DIR)/bin
+$(PROTO_BIN):
+	$(SILENT)mkdir -p "$@"
 
+PROTOC := $(PROTO_BIN)/protoc
 $(PROTOC): $(PROTOC_FILE)
-	@mkdir -p "$(PROTOC_DIR)"
-	@unzip -q -o -d "$(PROTOC_DIR)" "$(PROTOC_FILE)"
-	@test -x "$@"
-	@rm -rf $(DOWNLOAD_DIR)
+	$(SILENT)unzip -q -o -d "$(PROTOC_DIR)" "$(PROTOC_FILE)"
+	$(SILENT)test -x "$@"
 
-.PHONY: protoc-install
-protoc-install: $(PROTOC)
+PROTOC_GEN_GO_BIN := $(PROTO_BIN)/protoc-gen-go
+$(PROTOC_GEN_GO_BIN): $(PROTO_BIN)
+	GOBIN=$(PROTO_BIN) go install google.golang.org/protobuf/cmd/protoc-gen-go
+
+.PHONY: proto-install
+proto-install: $(PROTOC) $(PROTOC_GEN_GO_BIN)
