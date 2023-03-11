@@ -1,13 +1,13 @@
-BASE_DIR := ..
+BASE_DIR := $(CURDIR)/..
 
 # Code generation
 
 include ../make/proto.mk
 
 .PHONY: proto-gen
-proto-gen: $(PROTOC)
+proto-gen: proto-install
 	mkdir -p generated/v1
-	$(PROTOC) -I=proto/v1/ --go_out=generated/ proto/v1/*
+	PATH=$(PROTO_BIN) && $(PROTOC) -I=proto/v1/ --go_out=generated/ proto/v1/*
 
 .PHONY: go-gen
 go-gen:

@@ -16,3 +16,6 @@
 
 # Editor directories
 .idea/
+
+# Tool directories
+.proto
