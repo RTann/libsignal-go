@@ -74,6 +74,26 @@ func (s *SenderKey) Bytes() []byte {
 	return s.serialized
 }
 
+func (s *SenderKey) Version() uint8 {
+	return s.messageVersion
+}
+
+func (s *SenderKey) DistributionID() uuid.UUID {
+	return s.distributionID
+}
+
+func (s *SenderKey) ChainID() uint32 {
+	return s.chainID
+}
+
+func (s *SenderKey) Iteration() uint32 {
+	return s.iteration
+}
+
+func (s *SenderKey) Message() []byte {
+	return s.ciphertext
+}
+
 func (s *SenderKey) VerifySignature(signatureKey curve.PublicKey) (bool, error) {
 	idx := len(s.serialized) - 64
 	return signatureKey.VerifySignature(s.serialized[idx:], s.serialized[:idx])
@@ -123,4 +143,28 @@ func NewSenderKeyDistribution(
 		signingKey:     signingKey,
 		serialized:     serialized.Bytes(),
 	}, nil
+}
+
+func (s *SenderKeyDistribution) Version() uint8 {
+	return s.messageVersion
+}
+
+func (s *SenderKeyDistribution) DistributionID() uuid.UUID {
+	return s.distributionID
+}
+
+func (s *SenderKeyDistribution) ChainID() uint32 {
+	return s.chainID
+}
+
+func (s *SenderKeyDistribution) Iteration() uint32 {
+	return s.iteration
+}
+
+func (s *SenderKeyDistribution) ChainKey() []byte {
+	return s.chainKey
+}
+
+func (s *SenderKeyDistribution) SigningKey() curve.PublicKey {
+	return s.signingKey
 }
