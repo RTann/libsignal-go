@@ -1,0 +1,32 @@
+name: Protocol CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/setup-go@v3
+        with:
+          go-version: ^1.20
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+
+      - name: Style checks
+        run: |
+          make -C protocol style
+          if ! git diff --exit-code HEAD; then
+            echo
+            echo "*** Files are not formatted properly. See the above diff for more info."
+            exit 1
+          fi
+      - name: Unit tests
+        run: |
+          make -C protocol unit-tests
