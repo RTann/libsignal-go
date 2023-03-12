@@ -1,5 +1,5 @@
 // Package ratchet defines the keys and parameters required to perform
-// the double ratchet algorithm to send and receive encrypted messages.
+// the Double Ratchet algorithm to send and receive encrypted messages.
 package ratchet
 
 import (
@@ -9,12 +9,13 @@ import (
 	"golang.org/x/crypto/hkdf"
 )
 
-const info = "WhisperText"
+const initRootInfo = "WhisperText"
 
-// DeriveKeys derives a KDF chain root-key and chain-key based on the secret input.
+// DeriveKeys derives a root key and chain key based on the secret input
+// for the root KDF chain.
 func DeriveKeys(secretInput []byte) (RootKey, ChainKey, error) {
 	secrets := make([]byte, 64)
-	kdf := hkdf.New(sha256.New, secretInput, nil, []byte(info))
+	kdf := hkdf.New(sha256.New, secretInput, nil, []byte(initRootInfo))
 	_, err := io.ReadFull(kdf, secrets)
 	if err != nil {
 		return RootKey{}, ChainKey{}, err
