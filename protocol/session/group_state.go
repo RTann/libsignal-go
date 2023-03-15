@@ -66,7 +66,7 @@ func (s *GroupState) PrivateSigningKey() (curve.PrivateKey, error) {
 }
 
 func (s *GroupState) PublicSigningKey() (curve.PublicKey, error) {
-	return curve.NewPublicKey(s.state.GetSenderSigningKey().GetPrivate())
+	return curve.NewPublicKey(s.state.GetSenderSigningKey().GetPublic())
 }
 
 func (s *GroupState) AddMessageKeys(keys senderkey.MessageKeys) {
@@ -92,7 +92,7 @@ func (s *GroupState) RemoveMessageKeys(iteration uint32) (senderkey.MessageKeys,
 		}
 	}
 
-	if idx < -1 {
+	if idx < 0 {
 		return senderkey.MessageKeys{}, false, nil
 	}
 
@@ -101,6 +101,7 @@ func (s *GroupState) RemoveMessageKeys(iteration uint32) (senderkey.MessageKeys,
 		return senderkey.MessageKeys{}, false, err
 	}
 
+	s.state.GetSenderMessageKeys()[idx] = nil
 	s.state.SenderMessageKeys = append(s.state.GetSenderMessageKeys()[:idx], s.state.GetSenderMessageKeys()[idx+1:]...)
 
 	return derived, true, nil

@@ -1,24 +1,25 @@
-// TODO: This is incomplete.
-
 package message
 
 import (
 	"bytes"
+	"errors"
+	"fmt"
 	"io"
 
-	"github.com/google/uuid"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/RTann/libsignal-go/protocol/curve"
+	"github.com/RTann/libsignal-go/protocol/distribution"
 	v1 "github.com/RTann/libsignal-go/protocol/generated/v1"
 	"github.com/RTann/libsignal-go/protocol/internal/pointer"
+	"github.com/RTann/libsignal-go/protocol/perrors"
 )
 
 var _ Ciphertext = (*SenderKey)(nil)
 
 type SenderKey struct {
 	messageVersion uint8
-	distributionID uuid.UUID
+	distributionID distribution.ID
 	chainID        uint32
 	iteration      uint32
 	ciphertext     []byte
@@ -28,7 +29,7 @@ type SenderKey struct {
 func NewSenderKey(
 	random io.Reader,
 	messageVersion uint8,
-	distributionID uuid.UUID,
+	distributionID distribution.ID,
 	chainID,
 	iteration uint32,
 	ciphertext []byte,
@@ -78,7 +79,7 @@ func (s *SenderKey) Version() uint8 {
 	return s.messageVersion
 }
 
-func (s *SenderKey) DistributionID() uuid.UUID {
+func (s *SenderKey) DistributionID() distribution.ID {
 	return s.distributionID
 }
 
@@ -101,7 +102,7 @@ func (s *SenderKey) VerifySignature(signatureKey curve.PublicKey) (bool, error) 
 
 type SenderKeyDistribution struct {
 	messageVersion uint8
-	distributionID uuid.UUID
+	distributionID distribution.ID
 	chainID        uint32
 	iteration      uint32
 	chainKey       []byte
@@ -111,7 +112,7 @@ type SenderKeyDistribution struct {
 
 func NewSenderKeyDistribution(
 	messageVersion uint8,
-	distributionID uuid.UUID,
+	distributionID distribution.ID,
 	chainID,
 	iteration uint32,
 	chainKey []byte,
@@ -145,11 +146,58 @@ func NewSenderKeyDistribution(
 	}, nil
 }
 
+func NewSenderKeyDistributionFromBytes(bytes []byte) (*SenderKeyDistribution, error) {
+	// Message must contain key + chain key.
+	if len(bytes) < 1+32+32 {
+		return nil, errors.New("message too short")
+	}
+
+	messageVersion := bytes[0] >> 4
+	if messageVersion < SenderKeyVersion {
+		return nil, fmt.Errorf("unsupported message version: %d != %d", int(messageVersion), SenderKeyVersion)
+	}
+
+	var message v1.SenderKeyDistributionMessage
+	err := proto.Unmarshal(bytes[1:], &message)
+	if err != nil {
+		return nil, err
+	}
+
+	distributionID, err := distribution.ParseBytes(message.GetDistributionUuid())
+	if err != nil {
+		return nil, err
+	}
+	chainID := message.GetChainId()
+	iteration := message.GetIteration()
+	chainKey := message.GetChainKey()
+	if len(chainKey) != 32 {
+		return nil, perrors.ErrInvalidKeyLength(32, len(chainKey))
+	}
+	signingKey, err := curve.NewPublicKey(message.GetSigningKey())
+	if err != nil {
+		return nil, err
+	}
+
+	return &SenderKeyDistribution{
+		messageVersion: messageVersion,
+		distributionID: distributionID,
+		chainID:        chainID,
+		iteration:      iteration,
+		chainKey:       chainKey,
+		signingKey:     signingKey,
+		serialized:     bytes,
+	}, nil
+}
+
+func (s *SenderKeyDistribution) Bytes() []byte {
+	return s.serialized
+}
+
 func (s *SenderKeyDistribution) Version() uint8 {
 	return s.messageVersion
 }
 
-func (s *SenderKeyDistribution) DistributionID() uuid.UUID {
+func (s *SenderKeyDistribution) DistributionID() distribution.ID {
 	return s.distributionID
 }
 

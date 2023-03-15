@@ -3,10 +3,11 @@ package senderkey
 import (
 	"crypto/hmac"
 	"crypto/sha256"
-	v1 "github.com/RTann/libsignal-go/protocol/generated/v1"
 	"io"
 
 	"golang.org/x/crypto/hkdf"
+
+	v1 "github.com/RTann/libsignal-go/protocol/generated/v1"
 )
 
 const (
