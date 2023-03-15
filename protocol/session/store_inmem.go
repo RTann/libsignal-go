@@ -2,8 +2,7 @@ package session
 
 import (
 	"context"
-
-	"github.com/google/uuid"
+	"github.com/RTann/libsignal-go/protocol/distributionid"
 
 	"github.com/RTann/libsignal-go/protocol/address"
 )
@@ -34,7 +33,7 @@ func (i *inMemStore) Store(_ context.Context, address address.Address, record *R
 
 type key struct {
 	address address.Address
-	uuid    uuid.UUID
+	id      distributionid.ID
 }
 
 type inMemGroupStore struct {
@@ -47,18 +46,18 @@ func NewInMemGroupStore() GroupStore {
 	}
 }
 
-func (i *inMemGroupStore) Load(_ context.Context, sender address.Address, distributionID uuid.UUID) (*GroupRecord, bool, error) {
+func (i *inMemGroupStore) Load(_ context.Context, sender address.Address, distributionID distributionid.ID) (*GroupRecord, bool, error) {
 	record, exists := i.senderKeys[key{
 		address: sender,
-		uuid:    distributionID,
+		id:      distributionID,
 	}]
 	return record, exists, nil
 }
 
-func (i *inMemGroupStore) Store(_ context.Context, sender address.Address, distributionID uuid.UUID, record *GroupRecord) error {
+func (i *inMemGroupStore) Store(_ context.Context, sender address.Address, distributionID distributionid.ID, record *GroupRecord) error {
 	i.senderKeys[key{
 		address: sender,
-		uuid:    distributionID,
+		id:      distributionID,
 	}] = record
 	return nil
 }

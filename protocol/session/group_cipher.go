@@ -4,24 +4,23 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/RTann/libsignal-go/protocol/distributionid"
 	"io"
-
-	"github.com/golang/glog"
-	"github.com/google/uuid"
 
 	"github.com/RTann/libsignal-go/protocol/crypto"
 	"github.com/RTann/libsignal-go/protocol/message"
 	"github.com/RTann/libsignal-go/protocol/perrors"
 	"github.com/RTann/libsignal-go/protocol/senderkey"
+	"github.com/golang/glog"
 )
 
 func (g *GroupSession) EncryptMessage(ctx context.Context, random io.Reader, plaintext []byte) (*message.SenderKey, error) {
-	record, exists, err := g.SenderKeyStore.Load(ctx, g.Sender, g.DistributionID)
+	record, exists, err := g.SenderKeyStore.Load(ctx, g.Sender, g.SenderDistID)
 	if err != nil {
 		return nil, err
 	}
 	if !exists {
-		return nil, fmt.Errorf("no sender key state for distribution ID %s", g.DistributionID.String())
+		return nil, fmt.Errorf("no sender key state for distribution ID %s", g.SenderDistID.String())
 	}
 
 	state, err := record.State()
@@ -48,7 +47,7 @@ func (g *GroupSession) EncryptMessage(ctx context.Context, random io.Reader, pla
 	msg, err := message.NewSenderKey(
 		random,
 		uint8(state.Version()),
-		g.DistributionID,
+		g.SenderDistID,
 		state.ChainID(),
 		messageKeys.Iteration(),
 		ciphertext,
@@ -60,7 +59,7 @@ func (g *GroupSession) EncryptMessage(ctx context.Context, random io.Reader, pla
 
 	state.SetSenderChainKey(senderChainKey.Next())
 
-	err = g.SenderKeyStore.Store(ctx, g.Sender, g.DistributionID, record)
+	err = g.SenderKeyStore.Store(ctx, g.Sender, g.SenderDistID, record)
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +112,7 @@ func (g *GroupSession) DecryptMessage(ctx context.Context, ciphertext *message.S
 		return nil, err
 	}
 
-	err = g.SenderKeyStore.Store(ctx, g.Sender, g.DistributionID, record)
+	err = g.SenderKeyStore.Store(ctx, g.Sender, g.SenderDistID, record)
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +120,7 @@ func (g *GroupSession) DecryptMessage(ctx context.Context, ciphertext *message.S
 	return plaintext, nil
 }
 
-func (g *GroupSession) messageKeys(state *GroupState, iteration uint32, distributionID uuid.UUID) (senderkey.MessageKeys, error) {
+func (g *GroupSession) messageKeys(state *GroupState, iteration uint32, distributionID distributionid.ID) (senderkey.MessageKeys, error) {
 	chainKey := state.SenderChainKey()
 	currentIteration := chainKey.Iteration()
 
@@ -155,5 +154,10 @@ func (g *GroupSession) messageKeys(state *GroupState, iteration uint32, distribu
 
 	state.SetSenderChainKey(chainKey.Next())
 
-	return senderkey.MessageKeys{}, nil
+	messageKeys, err := chainKey.MessageKeys()
+	if err != nil {
+		return senderkey.MessageKeys{}, err
+	}
+
+	return messageKeys, nil
 }

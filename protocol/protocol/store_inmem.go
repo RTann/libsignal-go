@@ -11,7 +11,7 @@ type inMemSignalProtocolStore struct {
 	preKeyStore       prekey.Store
 	signedPreKeyStore prekey.SignedStore
 	identityStore     identity.Store
-	//senderKeyStore
+	groupStore        session.GroupStore
 }
 
 func NewInMemStore(keyPair identity.KeyPair, registrationID uint32) Store {
@@ -20,6 +20,7 @@ func NewInMemStore(keyPair identity.KeyPair, registrationID uint32) Store {
 		preKeyStore:       prekey.NewInMemStore(),
 		signedPreKeyStore: prekey.NewInMemSignedStore(),
 		identityStore:     identity.NewInMemStore(keyPair, registrationID),
+		groupStore:        session.NewInMemGroupStore(),
 	}
 }
 
@@ -37,4 +38,8 @@ func (i *inMemSignalProtocolStore) PreKeyStore() prekey.Store {
 
 func (i *inMemSignalProtocolStore) SignedPreKeyStore() prekey.SignedStore {
 	return i.signedPreKeyStore
+}
+
+func (i *inMemSignalProtocolStore) GroupStore() session.GroupStore {
+	return i.groupStore
 }
