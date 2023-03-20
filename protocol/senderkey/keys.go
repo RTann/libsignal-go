@@ -1,3 +1,5 @@
+// Package senderkey defines the keys required to
+// send and receive encrypted messages in a group.
 package senderkey
 
 import (

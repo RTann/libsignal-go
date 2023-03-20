@@ -1,3 +1,4 @@
+// Package distribution defines
 package distribution
 
 import "github.com/google/uuid"
