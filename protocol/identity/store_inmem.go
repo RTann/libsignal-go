@@ -64,5 +64,5 @@ func (i *inMemStore) IsTrustedIdentity(_ context.Context, address address.Addres
 		return true, nil
 	}
 
-	return Equal(identity, knownIdentity), nil
+	return identity.Equal(knownIdentity), nil
 }

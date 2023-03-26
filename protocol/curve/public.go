@@ -1,7 +1,6 @@
 package curve
 
 import (
-	"crypto/subtle"
 	"fmt"
 
 	"github.com/RTann/libsignal-go/protocol/curve/curve25519"
@@ -10,10 +9,15 @@ import (
 
 // PublicKey represents an elliptic curve public key.
 type PublicKey interface {
+	keyType() KeyType
 	// Bytes returns an encoding of the public key.
 	Bytes() []byte
 	// KeyBytes returns an encoding of the public key without the type prefix.
 	KeyBytes() []byte
+	// Equal reports whether the given public key is the same as this public key.
+	//
+	// This check is performed in constant time as long as the keys have the same type.
+	Equal(key PublicKey) bool
 	// VerifySignature verifies the signature is a valid signature
 	// of the messages by the public key.
 	VerifySignature(signature []byte, messages ...[]byte) (bool, error)
@@ -33,9 +37,4 @@ func NewPublicKey(key []byte) (PublicKey, error) {
 	default:
 		return nil, fmt.Errorf("unsupported key type: %v", t)
 	}
-}
-
-// PublicKeyEqual reports whether two public keys are the same.
-func PublicKeyEqual(a, b PublicKey) bool {
-	return subtle.ConstantTimeCompare(a.Bytes(), b.Bytes()) == 1
 }

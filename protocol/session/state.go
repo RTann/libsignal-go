@@ -89,7 +89,7 @@ func (s *State) SessionWithSelf() (bool, error) {
 			return false, err
 		}
 
-		return identity.Equal(remote, local), nil
+		return remote.Equal(local), nil
 	}
 
 	return false, nil
