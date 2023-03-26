@@ -67,16 +67,16 @@ func (s *Session) EncryptMessage(ctx context.Context, plaintext []byte) (message
 		return nil, err
 	}
 
-	msg, err := message.NewSignal(
-		version,
-		messageKeys.MACKey(),
-		senderEphemeral,
-		chainKey.Index(),
-		previousCounter,
-		ciphertext,
-		localIdentityKey,
-		theirIdentityKey,
-	)
+	msg, err := message.NewSignal(message.SignalConfig{
+		Version:             version,
+		MACKey:              messageKeys.MACKey(),
+		SenderRatchetKey:    senderEphemeral,
+		PreviousCounter:     previousCounter,
+		Counter:             chainKey.Index(),
+		Ciphertext:          ciphertext,
+		SenderIdentityKey:   localIdentityKey,
+		ReceiverIdentityKey: theirIdentityKey,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -88,15 +88,15 @@ func (s *Session) EncryptMessage(ctx context.Context, plaintext []byte) (message
 
 	// If there are unacknowledged pre-key messages, return a pre-key message instead.
 	if items != nil {
-		msg, err = message.NewPreKey(
-			version,
-			state.LocalRegistrationID(),
-			items.PreKeyID(),
-			items.SignedPreKeyID(),
-			items.BaseKey(),
-			localIdentityKey,
-			msg.(*message.Signal),
-		)
+		msg, err = message.NewPreKey(message.PreKeyConfig{
+			Version:        version,
+			RegistrationID: state.LocalRegistrationID(),
+			PreKeyID:       items.PreKeyID(),
+			SignedPreKeyID: items.SignedPreKeyID(),
+			BaseKey:        items.BaseKey(),
+			IdentityKey:    localIdentityKey,
+			Message:        msg.(*message.Signal),
+		})
 		if err != nil {
 			return nil, err
 		}

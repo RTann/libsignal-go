@@ -18,7 +18,7 @@ var _ Ciphertext = (*PreKey)(nil)
 
 // PreKey represents a pre-key message.
 type PreKey struct {
-	messageVersion byte
+	version        uint8
 	registrationID uint32
 	preKeyID       *prekey.ID
 	signedPreKeyID prekey.ID
@@ -28,41 +28,44 @@ type PreKey struct {
 	serialized     []byte
 }
 
-func NewPreKey(
-	messageVersion uint8,
-	registrationID uint32,
-	preKeyID *prekey.ID,
-	signedPreKeyID prekey.ID,
-	baseKey curve.PublicKey,
-	identityKey identity.Key,
-	signalMessage *Signal,
-) (Ciphertext, error) {
+// PreKeyConfig represents the configuration for a PreKey message.
+type PreKeyConfig struct {
+	Version        uint8
+	RegistrationID uint32
+	PreKeyID       *prekey.ID
+	SignedPreKeyID prekey.ID
+	BaseKey        curve.PublicKey
+	IdentityKey    identity.Key
+	Message        *Signal
+}
+
+func NewPreKey(cfg PreKeyConfig) (Ciphertext, error) {
 	message, err := proto.Marshal(&v1.PreKeySignalMessage{
-		RegistrationId: pointer.To(registrationID),
-		PreKeyId:       (*uint32)(preKeyID),
-		SignedPreKeyId: pointer.To(uint32(signedPreKeyID)),
-		BaseKey:        baseKey.Bytes(),
-		IdentityKey:    identityKey.Bytes(),
-		Message:        signalMessage.Bytes(),
+		RegistrationId: &cfg.RegistrationID,
+		PreKeyId:       (*uint32)(cfg.PreKeyID),
+		SignedPreKeyId: (*uint32)(&cfg.SignedPreKeyID),
+		BaseKey:        cfg.BaseKey.Bytes(),
+		IdentityKey:    cfg.IdentityKey.Bytes(),
+		Message:        cfg.Message.Bytes(),
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	versionPrefix := ((messageVersion & 0xF) << 4) | CiphertextVersion
+	versionPrefix := ((cfg.Version & 0xF) << 4) | CiphertextVersion
 
 	serialized := bytes.NewBuffer(make([]byte, 0, 1+len(message)))
 	serialized.WriteByte(versionPrefix)
 	serialized.Write(message)
 
 	return &PreKey{
-		messageVersion: messageVersion,
-		registrationID: registrationID,
-		preKeyID:       preKeyID,
-		signedPreKeyID: signedPreKeyID,
-		baseKey:        baseKey,
-		identityKey:    identityKey,
-		message:        signalMessage,
+		version:        cfg.Version,
+		registrationID: cfg.RegistrationID,
+		preKeyID:       cfg.PreKeyID,
+		signedPreKeyID: cfg.SignedPreKeyID,
+		baseKey:        cfg.BaseKey,
+		identityKey:    cfg.IdentityKey,
+		message:        cfg.Message,
 		serialized:     serialized.Bytes(),
 	}, nil
 }
@@ -72,9 +75,9 @@ func NewPreKeyFromBytes(bytes []byte) (Ciphertext, error) {
 		return nil, errors.New("message too short")
 	}
 
-	messageVersion := bytes[0] >> 4
-	if int(messageVersion) != CiphertextVersion {
-		return nil, fmt.Errorf("unsupported message version: %d != %d", int(messageVersion), CiphertextVersion)
+	version := bytes[0] >> 4
+	if int(version) != CiphertextVersion {
+		return nil, fmt.Errorf("unsupported message version: %d != %d", int(version), CiphertextVersion)
 	}
 
 	var message v1.PreKeySignalMessage
@@ -97,7 +100,7 @@ func NewPreKeyFromBytes(bytes []byte) (Ciphertext, error) {
 	}
 
 	return &PreKey{
-		messageVersion: messageVersion,
+		version:        version,
 		registrationID: message.GetRegistrationId(),
 		preKeyID:       pointer.To(prekey.ID(message.GetPreKeyId())),
 		signedPreKeyID: prekey.ID(message.GetSignedPreKeyId()),
@@ -117,7 +120,7 @@ func (p *PreKey) Bytes() []byte {
 }
 
 func (p *PreKey) Version() uint8 {
-	return p.messageVersion
+	return p.version
 }
 
 func (p *PreKey) RegistrationID() uint32 {
