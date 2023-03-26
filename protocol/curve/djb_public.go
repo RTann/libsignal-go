@@ -1,6 +1,8 @@
 package curve
 
 import (
+	"crypto/subtle"
+
 	"github.com/RTann/libsignal-go/protocol/curve/curve25519"
 	"github.com/RTann/libsignal-go/protocol/perrors"
 )
@@ -22,6 +24,10 @@ func newDJBPublicKey(key []byte) (*DJBPublicKey, error) {
 	}, nil
 }
 
+func (d *DJBPublicKey) keyType() KeyType {
+	return DJB
+}
+
 func (d *DJBPublicKey) Bytes() []byte {
 	bytes := make([]byte, 1+curve25519.PublicKeySize)
 	bytes[0] = byte(DJB)
@@ -33,6 +39,11 @@ func (d *DJBPublicKey) KeyBytes() []byte {
 	bytes := make([]byte, curve25519.PublicKeySize)
 	copy(bytes, d.key)
 	return bytes
+}
+
+func (d *DJBPublicKey) Equal(key PublicKey) bool {
+	return key.keyType() == DJB &&
+		subtle.ConstantTimeCompare(d.KeyBytes(), key.KeyBytes()) == 1
 }
 
 func (d *DJBPublicKey) VerifySignature(signature []byte, messages ...[]byte) (bool, error) {

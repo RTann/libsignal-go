@@ -61,8 +61,8 @@ func (k Key) VerifyAlternateIdentity(signature []byte, other Key) (bool, error) 
 }
 
 // Equal determines if the identity keys are the same.
-func Equal(a, b Key) bool {
-	return curve.PublicKeyEqual(a.PublicKey(), b.PublicKey())
+func (k Key) Equal(key Key) bool {
+	return k.PublicKey().Equal(key.PublicKey())
 }
 
 // KeyPair represents a public/private identity key pair.
