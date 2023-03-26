@@ -35,9 +35,9 @@ func TestFingerprint_V1(t *testing.T) {
 	bobIdentity, err := hex.DecodeString(bobIdentityHex)
 	require.NoError(t, err)
 
-	aKey, err := identity.NewKeyFromBytes(aliceIdentity)
+	aKey, err := identity.NewKey(aliceIdentity)
 	require.NoError(t, err)
-	bKey, err := identity.NewKeyFromBytes(bobIdentity)
+	bKey, err := identity.NewKey(bobIdentity)
 	require.NoError(t, err)
 
 	version := uint32(1)
@@ -65,9 +65,9 @@ func TestFingerprint_V2(t *testing.T) {
 	bobIdentity, err := hex.DecodeString(bobIdentityHex)
 	require.NoError(t, err)
 
-	aKey, err := identity.NewKeyFromBytes(aliceIdentity)
+	aKey, err := identity.NewKey(aliceIdentity)
 	require.NoError(t, err)
-	bKey, err := identity.NewKeyFromBytes(bobIdentity)
+	bKey, err := identity.NewKey(bobIdentity)
 	require.NoError(t, err)
 
 	version := uint32(2)
@@ -95,8 +95,8 @@ func TestFingerprint_MatchingIdentifiers(t *testing.T) {
 	bKeyPair, err := identity.GenerateKeyPair(rand.Reader)
 	require.NoError(t, err)
 
-	aKey := aKeyPair.IdentityKey()
-	bKey := bKeyPair.IdentityKey()
+	aKey := aKeyPair.IdentityKey
+	bKey := bKeyPair.IdentityKey
 
 	version := uint32(1)
 	iterations := uint32(1024)
@@ -127,8 +127,8 @@ func TestFingerprint_MismatchingVersions(t *testing.T) {
 	bKeyPair, err := identity.GenerateKeyPair(rand.Reader)
 	require.NoError(t, err)
 
-	aKey := aKeyPair.IdentityKey()
-	bKey := bKeyPair.IdentityKey()
+	aKey := aKeyPair.IdentityKey
+	bKey := bKeyPair.IdentityKey
 
 	iterations := uint32(5200)
 

@@ -38,10 +38,10 @@ func testInitRecordsV3(t *testing.T, random io.Reader) (*session.Record, *sessio
 	aliceParams := &ratchet.AliceParameters{
 		OurIdentityKeyPair: aliceIdentity,
 		OurBaseKeyPair:     aliceBaseKey,
-		TheirIdentityKey:   bobIdentity.IdentityKey(),
-		TheirSignedPreKey:  bobBaseKey.PublicKey(),
+		TheirIdentityKey:   bobIdentity.IdentityKey,
+		TheirSignedPreKey:  bobBaseKey.PublicKey,
 		TheirOneTimePreKey: nil,
-		TheirRatchetKey:    bobEphemeralKey.PublicKey(),
+		TheirRatchetKey:    bobEphemeralKey.PublicKey,
 	}
 	aliceSession, err := session.InitializeAliceSessionRecord(random, aliceParams)
 	require.NoError(t, err)
@@ -51,8 +51,8 @@ func testInitRecordsV3(t *testing.T, random io.Reader) (*session.Record, *sessio
 		OurSignedPreKeyPair:  bobBaseKey,
 		OurOneTimePreKeyPair: nil,
 		OurRatchetKeyPair:    bobEphemeralKey,
-		TheirIdentityKey:     aliceIdentity.IdentityKey(),
-		TheirBaseKey:         aliceBaseKey.PublicKey(),
+		TheirIdentityKey:     aliceIdentity.IdentityKey,
+		TheirBaseKey:         aliceBaseKey.PublicKey,
 	}
 	bobSession, err := session.InitializeBobSessionRecord(bobParams)
 	require.NoError(t, err)

@@ -25,13 +25,13 @@ func NewPreKey(id ID, key *curve.KeyPair) *PreKey {
 	return &PreKey{
 		preKey: &v1.PreKeyRecordStructure{
 			Id:         uint32(id),
-			PublicKey:  key.PublicKey().Bytes(),
-			PrivateKey: key.PrivateKey().Bytes(),
+			PublicKey:  key.PublicKey.Bytes(),
+			PrivateKey: key.PrivateKey.Bytes(),
 		},
 	}
 }
 
 // KeyPair returns the pre-key's public/private key pair.
 func (s *PreKey) KeyPair() (*curve.KeyPair, error) {
-	return curve.NewKeyPairFromBytes(s.preKey.GetPrivateKey(), s.preKey.GetPublicKey())
+	return curve.NewKeyPair(s.preKey.GetPrivateKey(), s.preKey.GetPublicKey())
 }

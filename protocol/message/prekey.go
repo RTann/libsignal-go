@@ -18,51 +18,53 @@ var _ Ciphertext = (*PreKey)(nil)
 
 // PreKey represents a pre-key message.
 type PreKey struct {
-	messageVersion byte
-	registrationID uint32
-	preKeyID       *prekey.ID
-	signedPreKeyID prekey.ID
-	baseKey        curve.PublicKey
-	identityKey    identity.Key
-	message        *Signal
+	Version        uint8
+	RegistrationID uint32
+	PreKeyID       *prekey.ID
+	SignedPreKeyID prekey.ID
+	BaseKey        curve.PublicKey
+	IdentityKey    identity.Key
+	Message        *Signal
 	serialized     []byte
 }
 
-func NewPreKey(
-	messageVersion uint8,
-	registrationID uint32,
-	preKeyID *prekey.ID,
-	signedPreKeyID prekey.ID,
-	baseKey curve.PublicKey,
-	identityKey identity.Key,
-	signalMessage *Signal,
-) (Ciphertext, error) {
+type PreKeyConfig struct {
+	Version        uint8
+	RegistrationID uint32
+	PreKeyID       *prekey.ID
+	SignedPreKeyID prekey.ID
+	BaseKey        curve.PublicKey
+	IdentityKey    identity.Key
+	Message        *Signal
+}
+
+func NewPreKey(cfg PreKeyConfig) (Ciphertext, error) {
 	message, err := proto.Marshal(&v1.PreKeySignalMessage{
-		RegistrationId: pointer.To(registrationID),
-		PreKeyId:       (*uint32)(preKeyID),
-		SignedPreKeyId: pointer.To(uint32(signedPreKeyID)),
-		BaseKey:        baseKey.Bytes(),
-		IdentityKey:    identityKey.Bytes(),
-		Message:        signalMessage.Bytes(),
+		RegistrationId: pointer.To(cfg.RegistrationID),
+		PreKeyId:       (*uint32)(cfg.PreKeyID),
+		SignedPreKeyId: pointer.To(uint32(cfg.SignedPreKeyID)),
+		BaseKey:        cfg.BaseKey.Bytes(),
+		IdentityKey:    cfg.IdentityKey.Bytes(),
+		Message:        cfg.Message.Bytes(),
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	versionPrefix := ((messageVersion & 0xF) << 4) | CiphertextVersion
+	versionPrefix := ((cfg.Version & 0xF) << 4) | CiphertextVersion
 
 	serialized := bytes.NewBuffer(make([]byte, 0, 1+len(message)))
 	serialized.WriteByte(versionPrefix)
 	serialized.Write(message)
 
 	return &PreKey{
-		messageVersion: messageVersion,
-		registrationID: registrationID,
-		preKeyID:       preKeyID,
-		signedPreKeyID: signedPreKeyID,
-		baseKey:        baseKey,
-		identityKey:    identityKey,
-		message:        signalMessage,
+		Version:        cfg.Version,
+		RegistrationID: cfg.RegistrationID,
+		PreKeyID:       cfg.PreKeyID,
+		SignedPreKeyID: cfg.SignedPreKeyID,
+		BaseKey:        cfg.BaseKey,
+		IdentityKey:    cfg.IdentityKey,
+		Message:        cfg.Message,
 		serialized:     serialized.Bytes(),
 	}, nil
 }
@@ -87,23 +89,23 @@ func NewPreKeyFromBytes(bytes []byte) (Ciphertext, error) {
 	if err != nil {
 		return nil, err
 	}
-	identityKey, err := identity.NewKeyFromBytes(message.GetIdentityKey())
+	identityKey, err := identity.NewKey(message.GetIdentityKey())
 	if err != nil {
 		return nil, err
 	}
-	signalMessage, err := NewSignalMessageFromBytes(message.GetMessage())
+	signalMessage, err := NewSignalFromBytes(message.GetMessage())
 	if err != nil {
 		return nil, err
 	}
 
 	return &PreKey{
-		messageVersion: messageVersion,
-		registrationID: message.GetRegistrationId(),
-		preKeyID:       pointer.To(prekey.ID(message.GetPreKeyId())),
-		signedPreKeyID: prekey.ID(message.GetSignedPreKeyId()),
-		baseKey:        baseKey,
-		identityKey:    identityKey,
-		message:        signalMessage.(*Signal),
+		Version:        messageVersion,
+		RegistrationID: message.GetRegistrationId(),
+		PreKeyID:       pointer.To(prekey.ID(message.GetPreKeyId())),
+		SignedPreKeyID: prekey.ID(message.GetSignedPreKeyId()),
+		BaseKey:        baseKey,
+		IdentityKey:    identityKey,
+		Message:        signalMessage.(*Signal),
 		serialized:     bytes,
 	}, nil
 }
@@ -114,36 +116,4 @@ func (*PreKey) Type() CiphertextType {
 
 func (p *PreKey) Bytes() []byte {
 	return p.serialized
-}
-
-func (p *PreKey) Version() uint8 {
-	return p.messageVersion
-}
-
-func (p *PreKey) RegistrationID() uint32 {
-	return p.registrationID
-}
-
-func (p *PreKey) PreKeyID() *prekey.ID {
-	return p.preKeyID
-}
-
-func (p *PreKey) SignedPreKeyID() prekey.ID {
-	return p.signedPreKeyID
-}
-
-func (p *PreKey) BaseKey() curve.PublicKey {
-	return p.baseKey
-}
-
-func (p *PreKey) BaseKeyBytes() []byte {
-	return p.baseKey.Bytes()
-}
-
-func (p *PreKey) IdentityKey() identity.Key {
-	return p.identityKey
-}
-
-func (p *PreKey) Message() *Signal {
-	return p.message
 }

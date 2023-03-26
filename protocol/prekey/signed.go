@@ -15,8 +15,8 @@ func NewSigned(id ID, timestamp uint64, key *curve.KeyPair, signature []byte) *S
 	return &SignedPreKey{
 		signed: &v1.SignedPreKeyRecordStructure{
 			Id:         uint32(id),
-			PublicKey:  key.PublicKey().Bytes(),
-			PrivateKey: key.PrivateKey().Bytes(),
+			PublicKey:  key.PublicKey.Bytes(),
+			PrivateKey: key.PrivateKey.Bytes(),
 			Signature:  signature,
 			Timestamp:  timestamp,
 		},
@@ -25,5 +25,5 @@ func NewSigned(id ID, timestamp uint64, key *curve.KeyPair, signature []byte) *S
 
 // KeyPair returns the signed pre-key's public/private key pair.
 func (s *SignedPreKey) KeyPair() (*curve.KeyPair, error) {
-	return curve.NewKeyPairFromBytes(s.signed.GetPrivateKey(), s.signed.GetPublicKey())
+	return curve.NewKeyPair(s.signed.GetPrivateKey(), s.signed.GetPublicKey())
 }

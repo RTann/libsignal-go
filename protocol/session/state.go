@@ -66,7 +66,7 @@ func (s *State) RemoteIdentityKey() (identity.Key, bool, error) {
 		return identity.Key{}, false, nil
 	}
 
-	remoteKey, err := identity.NewKeyFromBytes(remoteBytes)
+	remoteKey, err := identity.NewKey(remoteBytes)
 	if err != nil {
 		return identity.Key{}, false, err
 	}
@@ -75,7 +75,7 @@ func (s *State) RemoteIdentityKey() (identity.Key, bool, error) {
 }
 
 func (s *State) LocalIdentityKey() (identity.Key, error) {
-	return identity.NewKeyFromBytes(s.session.GetLocalIdentityPublic())
+	return identity.NewKey(s.session.GetLocalIdentityPublic())
 }
 
 func (s *State) SessionWithSelf() (bool, error) {
@@ -89,7 +89,7 @@ func (s *State) SessionWithSelf() (bool, error) {
 			return false, err
 		}
 
-		return identity.Equal(remote, local), nil
+		return remote.Equal(local), nil
 	}
 
 	return false, nil
@@ -198,8 +198,8 @@ func (s *State) AddReceiverChain(sender curve.PublicKey, chainKey ratchet.ChainK
 
 func (s *State) SetSenderChain(sender *curve.KeyPair, nextChainKey ratchet.ChainKey) {
 	s.session.SenderChain = &v1.SessionStructure_Chain{
-		SenderRatchetKey:        sender.PublicKey().Bytes(),
-		SenderRatchetKeyPrivate: sender.PrivateKey().Bytes(),
+		SenderRatchetKey:        sender.PublicKey.Bytes(),
+		SenderRatchetKeyPrivate: sender.PrivateKey.Bytes(),
 		ChainKey: &v1.SessionStructure_Chain_ChainKey{
 			Index: nextChainKey.Index(),
 			Key:   nextChainKey.Key(),

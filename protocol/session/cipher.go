@@ -67,16 +67,16 @@ func (s *Session) EncryptMessage(ctx context.Context, plaintext []byte) (message
 		return nil, err
 	}
 
-	msg, err := message.NewSignal(
-		version,
-		messageKeys.MACKey(),
-		senderEphemeral,
-		chainKey.Index(),
-		previousCounter,
-		ciphertext,
-		localIdentityKey,
-		theirIdentityKey,
-	)
+	msg, err := message.NewSignal(message.SignalConfig{
+		Version:          version,
+		MacKey:           messageKeys.MACKey(),
+		SenderRatchetKey: senderEphemeral,
+		Counter:          chainKey.Index(),
+		PreviousCounter:  previousCounter,
+		Ciphertext:       ciphertext,
+		SenderIdentity:   localIdentityKey,
+		ReceiverIdentity: theirIdentityKey,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -88,15 +88,15 @@ func (s *Session) EncryptMessage(ctx context.Context, plaintext []byte) (message
 
 	// If there are unacknowledged pre-key messages, return a pre-key message instead.
 	if items != nil {
-		msg, err = message.NewPreKey(
-			version,
-			state.LocalRegistrationID(),
-			items.PreKeyID(),
-			items.SignedPreKeyID(),
-			items.BaseKey(),
-			localIdentityKey,
-			msg.(*message.Signal),
-		)
+		msg, err = message.NewPreKey(message.PreKeyConfig{
+			Version:        version,
+			RegistrationID: state.LocalRegistrationID(),
+			PreKeyID:       items.PreKeyID(),
+			SignedPreKeyID: items.SignedPreKeyID(),
+			BaseKey:        items.BaseKey(),
+			IdentityKey:    localIdentityKey,
+			Message:        msg.(*message.Signal),
+		})
 		if err != nil {
 			return nil, err
 		}
@@ -109,7 +109,7 @@ func (s *Session) EncryptMessage(ctx context.Context, plaintext []byte) (message
 		return nil, err
 	}
 	if !trusted {
-		glog.Warningf("Identity key %s is not trusted for remote address %s", hex.EncodeToString(theirIdentityKey.PublicKey().KeyBytes()), s.RemoteAddress)
+		glog.Warningf("Identity key %s is not trusted for remote address %s", hex.EncodeToString(theirIdentityKey.PublicKey.KeyBytes()), s.RemoteAddress)
 		return nil, perrors.ErrUntrustedIdentity(s.RemoteAddress)
 	}
 
@@ -150,7 +150,7 @@ func (s *Session) decryptPreKey(ctx context.Context, random io.Reader, ciphertex
 		return nil, err
 	}
 
-	plaintext, err := s.decryptMessage(random, record, ciphertext.Type(), ciphertext.Message())
+	plaintext, err := s.decryptMessage(random, record, ciphertext.Type(), ciphertext.Message)
 	if err != nil {
 		return nil, err
 	}
@@ -275,13 +275,13 @@ func (s *Session) decryptMessageSession(random io.Reader, state *State, cipherte
 		return nil, errors.New("no session available to decrypt")
 	}
 
-	ciphertextVersion := ciphertext.Version()
+	ciphertextVersion := ciphertext.Version
 	if uint32(ciphertextVersion) != state.Version() {
 		return nil, fmt.Errorf("unrecognized message version: %d", ciphertextVersion)
 	}
 
-	theirEphemeral := ciphertext.SenderRatchetKey()
-	counter := ciphertext.Counter()
+	theirEphemeral := ciphertext.SenderRatchetKey
+	counter := ciphertext.Counter
 	chainKey, err := s.chainKey(random, state, theirEphemeral)
 	if err != nil {
 		return nil, err
@@ -312,7 +312,7 @@ func (s *Session) decryptMessageSession(random io.Reader, state *State, cipherte
 		return nil, errors.New("MAC verification failed")
 	}
 
-	plaintext, err := crypto.AESCBCDecrypt(messageKeys.CipherKey(), messageKeys.IV(), ciphertext.Message())
+	plaintext, err := crypto.AESCBCDecrypt(messageKeys.CipherKey(), messageKeys.IV(), ciphertext.Ciphertext)
 	if err != nil {
 		return nil, err
 	}
@@ -352,7 +352,7 @@ func (s *Session) chainKey(random io.Reader, state *State, theirEphemeral curve.
 		return ratchet.ChainKey{}, err
 	}
 
-	senderRootKey, senderChainKey, err := receiverRootKey.CreateChain(ourNewEphemeral.PrivateKey(), theirEphemeral)
+	senderRootKey, senderChainKey, err := receiverRootKey.CreateChain(ourNewEphemeral.PrivateKey, theirEphemeral)
 	if err != nil {
 		return ratchet.ChainKey{}, err
 	}

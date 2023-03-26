@@ -20,40 +20,42 @@ var _ Ciphertext = (*Signal)(nil)
 
 // Signal represents a typical ciphertext message.
 type Signal struct {
-	messageVersion  uint8
-	senderRachetKey curve.PublicKey
-	previousCounter uint32
-	counter         uint32
-	ciphertext      []byte
-	serialized      []byte
+	Version          uint8
+	SenderRatchetKey curve.PublicKey
+	Counter          uint32
+	PreviousCounter  uint32
+	Ciphertext       []byte
+	serialized       []byte
 }
 
-func NewSignal(
-	messageVersion uint8,
-	macKey []byte,
-	senderRatchetKey curve.PublicKey,
-	counter,
-	previousCounter uint32,
-	ciphertext []byte,
-	senderIdentityKey,
-	receiverIdentityKey identity.Key,
-) (Ciphertext, error) {
+type SignalConfig struct {
+	Version          uint8
+	MacKey           []byte
+	SenderRatchetKey curve.PublicKey
+	Counter          uint32
+	PreviousCounter  uint32
+	Ciphertext       []byte
+	SenderIdentity   identity.Key
+	ReceiverIdentity identity.Key
+}
+
+func NewSignal(cfg SignalConfig) (Ciphertext, error) {
 	message, err := proto.Marshal(&v1.SignalMessage{
-		RatchetKey:      senderRatchetKey.Bytes(),
-		Counter:         pointer.To(counter),
-		PreviousCounter: pointer.To(previousCounter),
-		Ciphertext:      ciphertext,
+		RatchetKey:      cfg.SenderRatchetKey.Bytes(),
+		Counter:         pointer.To(cfg.Counter),
+		PreviousCounter: pointer.To(cfg.PreviousCounter),
+		Ciphertext:      cfg.Ciphertext,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	versionPrefix := ((messageVersion & 0xF) << 4) | CiphertextVersion
+	versionPrefix := ((cfg.Version & 0xF) << 4) | CiphertextVersion
 	serialized := bytes.NewBuffer(make([]byte, 0, 1+len(message)+macSize))
 	serialized.WriteByte(versionPrefix)
 	serialized.Write(message)
 
-	mac, err := HMAC(macKey, senderIdentityKey, receiverIdentityKey, serialized.Bytes())
+	mac, err := mac(cfg.MacKey, cfg.SenderIdentity, cfg.ReceiverIdentity, serialized.Bytes())
 	if err != nil {
 		return nil, err
 	}
@@ -61,16 +63,16 @@ func NewSignal(
 	serialized.Write(mac)
 
 	return &Signal{
-		messageVersion:  messageVersion,
-		senderRachetKey: senderRatchetKey,
-		previousCounter: previousCounter,
-		counter:         counter,
-		ciphertext:      ciphertext,
-		serialized:      serialized.Bytes(),
+		Version:          cfg.Version,
+		SenderRatchetKey: cfg.SenderRatchetKey,
+		Counter:          cfg.Counter,
+		PreviousCounter:  cfg.PreviousCounter,
+		Ciphertext:       cfg.Ciphertext,
+		serialized:       serialized.Bytes(),
 	}, nil
 }
 
-func NewSignalMessageFromBytes(bytes []byte) (Ciphertext, error) {
+func NewSignalFromBytes(bytes []byte) (Ciphertext, error) {
 	if len(bytes) == 0 {
 		return nil, errors.New("message too short")
 	}
@@ -92,12 +94,12 @@ func NewSignalMessageFromBytes(bytes []byte) (Ciphertext, error) {
 	}
 
 	return &Signal{
-		messageVersion:  messageVersion,
-		senderRachetKey: senderRatchetKey,
-		previousCounter: message.GetPreviousCounter(),
-		counter:         message.GetCounter(),
-		ciphertext:      message.GetCiphertext(),
-		serialized:      bytes,
+		Version:          messageVersion,
+		SenderRatchetKey: senderRatchetKey,
+		Counter:          message.GetCounter(),
+		PreviousCounter:  message.GetPreviousCounter(),
+		Ciphertext:       message.GetCiphertext(),
+		serialized:       bytes,
 	}, nil
 }
 
@@ -109,28 +111,12 @@ func (s *Signal) Bytes() []byte {
 	return s.serialized
 }
 
-func (s *Signal) Message() []byte {
-	return s.ciphertext
-}
-
-func (s *Signal) Version() uint8 {
-	return s.messageVersion
-}
-
-func (s *Signal) SenderRatchetKey() curve.PublicKey {
-	return s.senderRachetKey
-}
-
-func (s *Signal) Counter() uint32 {
-	return s.counter
-}
-
 // VerifyMAC verifies the message authentication code (MAC) sent with the signal message
 // matches our computed MAC.
 //
 // The MAC is expected to be an HMAC.
 func (s *Signal) VerifyMAC(macKey []byte, senderIdentityKey, receiverIdentityKey identity.Key) (bool, error) {
-	ourMAC, err := HMAC(macKey, senderIdentityKey, receiverIdentityKey, s.serialized[:len(s.serialized)-macSize])
+	ourMAC, err := mac(macKey, senderIdentityKey, receiverIdentityKey, s.serialized[:len(s.serialized)-macSize])
 	if err != nil {
 		return false, err
 	}

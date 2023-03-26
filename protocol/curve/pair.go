@@ -6,8 +6,8 @@ import "io"
 
 // KeyPair represents a related pair of public and private keys.
 type KeyPair struct {
-	privateKey PrivateKey
-	publicKey  PublicKey
+	PrivateKey PrivateKey
+	PublicKey  PublicKey
 }
 
 // GenerateKeyPair returns a public/private key pair using the given reader.
@@ -20,26 +20,16 @@ func GenerateKeyPair(random io.Reader) (*KeyPair, error) {
 		return nil, err
 	}
 
-	publicKey := privateKey.PublicKey()
-
 	return &KeyPair{
-		privateKey: privateKey,
-		publicKey:  publicKey,
+		PrivateKey: privateKey,
+		PublicKey:  privateKey.PublicKey(),
 	}, nil
 }
 
 // NewKeyPair returns a public/private key pair from the given pair.
-func NewKeyPair(privateKey PrivateKey, publicKey PublicKey) *KeyPair {
-	return &KeyPair{
-		privateKey: privateKey,
-		publicKey:  publicKey,
-	}
-}
-
-// NewKeyPairFromBytes returns a public/private key pair from the given pair.
-// The given pair is expected to represent a valid curve.PrivateKey and
-// curve.PublicKey, respectively.
-func NewKeyPairFromBytes(privateKey, publicKey []byte) (*KeyPair, error) {
+// The given pair is expected to represent a valid PrivateKey and
+// PublicKey, respectively.
+func NewKeyPair(privateKey, publicKey []byte) (*KeyPair, error) {
 	private, err := NewPrivateKey(privateKey)
 	if err != nil {
 		return nil, err
@@ -49,26 +39,20 @@ func NewKeyPairFromBytes(privateKey, publicKey []byte) (*KeyPair, error) {
 		return nil, err
 	}
 
-	return NewKeyPair(private, public), nil
-}
-
-// PrivateKey returns the pair's private key.
-func (k *KeyPair) PrivateKey() PrivateKey {
-	return k.privateKey
-}
-
-// PublicKey returns the pair's public key.
-func (k *KeyPair) PublicKey() PublicKey {
-	return k.publicKey
+	return &KeyPair{
+		PrivateKey: private,
+		PublicKey:  public,
+	}, nil
 }
 
 // Agreement calculates and returns the shared secret between
 // the key pair's private key and the given public key.
 func (k *KeyPair) Agreement(key PublicKey) ([]byte, error) {
-	return k.privateKey.Agreement(key)
+	return k.PrivateKey.Agreement(key)
 }
 
-// Sign calculates the digital signature of the messages using the key pair's private key.
+// Sign calculates the digital signature of the messages using
+// the key pair's private key.
 func (k *KeyPair) Sign(random io.Reader, messages ...[]byte) ([]byte, error) {
-	return k.privateKey.Sign(random, messages...)
+	return k.PrivateKey.Sign(random, messages...)
 }

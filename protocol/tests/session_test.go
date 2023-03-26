@@ -43,8 +43,8 @@ func TestPreKey(t *testing.T) {
 	bobSignedPreKeyPair, err := curve.GenerateKeyPair(random)
 	require.NoError(t, err)
 
-	bobSignedPreKeyPublic := bobSignedPreKeyPair.PublicKey().Bytes()
-	bobSignedPreKeySignature, err := bobStore.IdentityStore().KeyPair(ctx).PrivateKey().Sign(random, bobSignedPreKeyPublic)
+	bobSignedPreKeyPublic := bobSignedPreKeyPair.PublicKey.Bytes()
+	bobSignedPreKeySignature, err := bobStore.IdentityStore().KeyPair(ctx).PrivateKey.Sign(random, bobSignedPreKeyPublic)
 	assert.NoError(t, err)
 
 	preKeyID := prekey.ID(31337)
@@ -54,11 +54,11 @@ func TestPreKey(t *testing.T) {
 		RegistrationID:        bobStore.IdentityStore().LocalRegistrationID(ctx),
 		DeviceID:              1,
 		PreKeyID:              pointer.To(preKeyID),
-		PreKeyPublic:          bobPreKeyPair.PublicKey(),
+		PreKeyPublic:          bobPreKeyPair.PublicKey,
 		SignedPreKeyID:        signedPreKeyID,
-		SignedPreKeyPublic:    bobSignedPreKeyPair.PublicKey(),
+		SignedPreKeyPublic:    bobSignedPreKeyPair.PublicKey,
 		SignedPreKeySignature: bobSignedPreKeySignature,
-		IdentityKey:           bobStore.IdentityStore().KeyPair(ctx).IdentityKey(),
+		IdentityKey:           bobStore.IdentityStore().KeyPair(ctx).IdentityKey,
 	}
 
 	aliceSession := &session.Session{
@@ -124,8 +124,8 @@ func TestPreKey(t *testing.T) {
 	bobSignedPreKeyPair, err = curve.GenerateKeyPair(random)
 	require.NoError(t, err)
 
-	bobSignedPreKeyPublic = bobSignedPreKeyPair.PublicKey().Bytes()
-	bobSignedPreKeySignature, err = bobStore.IdentityStore().KeyPair(ctx).PrivateKey().Sign(random, bobSignedPreKeyPublic)
+	bobSignedPreKeyPublic = bobSignedPreKeyPair.PublicKey.Bytes()
+	bobSignedPreKeySignature, err = bobStore.IdentityStore().KeyPair(ctx).PrivateKey.Sign(random, bobSignedPreKeyPublic)
 	assert.NoError(t, err)
 
 	preKeyID = prekey.ID(31337)
@@ -135,11 +135,11 @@ func TestPreKey(t *testing.T) {
 		RegistrationID:        bobStore.IdentityStore().LocalRegistrationID(ctx),
 		DeviceID:              1,
 		PreKeyID:              pointer.To(preKeyID + 1),
-		PreKeyPublic:          bobPreKeyPair.PublicKey(),
+		PreKeyPublic:          bobPreKeyPair.PublicKey,
 		SignedPreKeyID:        signedPreKeyID + 1,
-		SignedPreKeyPublic:    bobSignedPreKeyPair.PublicKey(),
+		SignedPreKeyPublic:    bobSignedPreKeyPair.PublicKey,
 		SignedPreKeySignature: bobSignedPreKeySignature,
-		IdentityKey:           bobStore.IdentityStore().KeyPair(ctx).IdentityKey(),
+		IdentityKey:           bobStore.IdentityStore().KeyPair(ctx).IdentityKey,
 	}
 
 	assert.NoError(t, bobStore.PreKeyStore().Store(ctx, preKeyID+1, prekey.NewPreKey(preKeyID+1, bobPreKeyPair)))
@@ -157,7 +157,7 @@ func TestPreKey(t *testing.T) {
 	_, err = bobSession.DecryptMessage(ctx, random, outgoingMsg)
 	assert.True(t, perrors.IsErrUntrustedIdentity(err))
 
-	overwrote, err := bobStore.IdentityStore().Store(ctx, aliceAddress, aliceStore.IdentityStore().KeyPair(ctx).IdentityKey())
+	overwrote, err := bobStore.IdentityStore().Store(ctx, aliceAddress, aliceStore.IdentityStore().KeyPair(ctx).IdentityKey)
 	assert.NoError(t, err)
 	assert.True(t, overwrote)
 
@@ -171,11 +171,11 @@ func TestPreKey(t *testing.T) {
 		RegistrationID:        bobStore.IdentityStore().LocalRegistrationID(ctx),
 		DeviceID:              1,
 		PreKeyID:              pointer.To(preKeyID),
-		PreKeyPublic:          bobPreKeyPair.PublicKey(),
+		PreKeyPublic:          bobPreKeyPair.PublicKey,
 		SignedPreKeyID:        signedPreKeyID,
-		SignedPreKeyPublic:    bobSignedPreKeyPair.PublicKey(),
+		SignedPreKeyPublic:    bobSignedPreKeyPair.PublicKey,
 		SignedPreKeySignature: bobSignedPreKeySignature,
-		IdentityKey:           aliceStore.IdentityStore().KeyPair(ctx).IdentityKey(),
+		IdentityKey:           aliceStore.IdentityStore().KeyPair(ctx).IdentityKey,
 	}
 	assert.Error(t, aliceSession.ProcessPreKeyBundle(ctx, random, bobPreKeyBundle))
 
@@ -285,8 +285,8 @@ func TestChainJumpOverLimit_Remote(t *testing.T) {
 	bobSignedPreKeyPair, err := curve.GenerateKeyPair(random)
 	require.NoError(t, err)
 
-	bobSignedPreKeyPublic := bobSignedPreKeyPair.PublicKey().Bytes()
-	bobSignedPreKeySignature, err := bobStore.IdentityStore().KeyPair(ctx).PrivateKey().Sign(random, bobSignedPreKeyPublic)
+	bobSignedPreKeyPublic := bobSignedPreKeyPair.PublicKey.Bytes()
+	bobSignedPreKeySignature, err := bobStore.IdentityStore().KeyPair(ctx).PrivateKey.Sign(random, bobSignedPreKeyPublic)
 	assert.NoError(t, err)
 
 	preKeyID := prekey.ID(31337)
@@ -296,11 +296,11 @@ func TestChainJumpOverLimit_Remote(t *testing.T) {
 		RegistrationID:        bobStore.IdentityStore().LocalRegistrationID(ctx),
 		DeviceID:              1,
 		PreKeyID:              pointer.To(preKeyID),
-		PreKeyPublic:          bobPreKeyPair.PublicKey(),
+		PreKeyPublic:          bobPreKeyPair.PublicKey,
 		SignedPreKeyID:        signedPreKeyID,
-		SignedPreKeyPublic:    bobSignedPreKeyPair.PublicKey(),
+		SignedPreKeyPublic:    bobSignedPreKeyPair.PublicKey,
 		SignedPreKeySignature: bobSignedPreKeySignature,
-		IdentityKey:           bobStore.IdentityStore().KeyPair(ctx).IdentityKey(),
+		IdentityKey:           bobStore.IdentityStore().KeyPair(ctx).IdentityKey,
 	}
 
 	aliceSession := &session.Session{
@@ -352,8 +352,8 @@ func TestChainJumpOverLimit_Self(t *testing.T) {
 	a2SignedPreKeyPair, err := curve.GenerateKeyPair(random)
 	require.NoError(t, err)
 
-	a2SignedPreKeyPublic := a2SignedPreKeyPair.PublicKey().Bytes()
-	a2SignedPreKeySignature, err := a2Store.IdentityStore().KeyPair(ctx).PrivateKey().Sign(random, a2SignedPreKeyPublic)
+	a2SignedPreKeyPublic := a2SignedPreKeyPair.PublicKey.Bytes()
+	a2SignedPreKeySignature, err := a2Store.IdentityStore().KeyPair(ctx).PrivateKey.Sign(random, a2SignedPreKeyPublic)
 
 	preKeyID := prekey.ID(31337)
 	signedPreKeyID := prekey.ID(22)
@@ -362,11 +362,11 @@ func TestChainJumpOverLimit_Self(t *testing.T) {
 		RegistrationID:        a2Store.IdentityStore().LocalRegistrationID(ctx),
 		DeviceID:              1,
 		PreKeyID:              pointer.To(preKeyID),
-		PreKeyPublic:          a2PreKeyPair.PublicKey(),
+		PreKeyPublic:          a2PreKeyPair.PublicKey,
 		SignedPreKeyID:        signedPreKeyID,
-		SignedPreKeyPublic:    a2SignedPreKeyPair.PublicKey(),
+		SignedPreKeyPublic:    a2SignedPreKeyPair.PublicKey,
 		SignedPreKeySignature: a2SignedPreKeySignature,
-		IdentityKey:           a2Store.IdentityStore().KeyPair(ctx).IdentityKey(),
+		IdentityKey:           a2Store.IdentityStore().KeyPair(ctx).IdentityKey,
 	}
 
 	a1Session := &session.Session{
@@ -417,8 +417,8 @@ func TestBadSignedPreKeySignature(t *testing.T) {
 	bobSignedPreKeyPair, err := curve.GenerateKeyPair(random)
 	require.NoError(t, err)
 
-	bobSignedPreKeyPublic := bobSignedPreKeyPair.PublicKey().Bytes()
-	bobSignedPreKeySignature, err := bobStore.IdentityStore().KeyPair(ctx).PrivateKey().Sign(random, bobSignedPreKeyPublic)
+	bobSignedPreKeyPublic := bobSignedPreKeyPair.PublicKey.Bytes()
+	bobSignedPreKeySignature, err := bobStore.IdentityStore().KeyPair(ctx).PrivateKey.Sign(random, bobSignedPreKeyPublic)
 	assert.NoError(t, err)
 
 	preKeyID := prekey.ID(31337)
@@ -434,11 +434,11 @@ func TestBadSignedPreKeySignature(t *testing.T) {
 		RegistrationID:        bobStore.IdentityStore().LocalRegistrationID(ctx),
 		DeviceID:              1,
 		PreKeyID:              pointer.To(preKeyID),
-		PreKeyPublic:          bobPreKeyPair.PublicKey(),
+		PreKeyPublic:          bobPreKeyPair.PublicKey,
 		SignedPreKeyID:        signedPreKeyID,
-		SignedPreKeyPublic:    bobSignedPreKeyPair.PublicKey(),
+		SignedPreKeyPublic:    bobSignedPreKeyPair.PublicKey,
 		SignedPreKeySignature: nil,
-		IdentityKey:           bobStore.IdentityStore().KeyPair(ctx).IdentityKey(),
+		IdentityKey:           bobStore.IdentityStore().KeyPair(ctx).IdentityKey,
 	}
 
 	badSignature := make([]byte, len(bobSignedPreKeySignature))
@@ -475,8 +475,8 @@ func TestRepeatBundleMessage(t *testing.T) {
 	bobSignedPreKeyPair, err := curve.GenerateKeyPair(random)
 	require.NoError(t, err)
 
-	bobSignedPreKeyPublic := bobSignedPreKeyPair.PublicKey().Bytes()
-	bobSignedPreKeySignature, err := bobStore.IdentityStore().KeyPair(ctx).PrivateKey().Sign(random, bobSignedPreKeyPublic)
+	bobSignedPreKeyPublic := bobSignedPreKeyPair.PublicKey.Bytes()
+	bobSignedPreKeySignature, err := bobStore.IdentityStore().KeyPair(ctx).PrivateKey.Sign(random, bobSignedPreKeyPublic)
 	assert.NoError(t, err)
 
 	preKeyID := prekey.ID(31337)
@@ -486,11 +486,11 @@ func TestRepeatBundleMessage(t *testing.T) {
 		RegistrationID:        bobStore.IdentityStore().LocalRegistrationID(ctx),
 		DeviceID:              1,
 		PreKeyID:              pointer.To(preKeyID),
-		PreKeyPublic:          bobPreKeyPair.PublicKey(),
+		PreKeyPublic:          bobPreKeyPair.PublicKey,
 		SignedPreKeyID:        signedPreKeyID,
-		SignedPreKeyPublic:    bobSignedPreKeyPair.PublicKey(),
+		SignedPreKeyPublic:    bobSignedPreKeyPair.PublicKey,
 		SignedPreKeySignature: bobSignedPreKeySignature,
-		IdentityKey:           bobStore.IdentityStore().KeyPair(ctx).IdentityKey(),
+		IdentityKey:           bobStore.IdentityStore().KeyPair(ctx).IdentityKey,
 	}
 
 	aliceSession := &session.Session{
@@ -575,8 +575,8 @@ func TestOptionalOneTimePreKey(t *testing.T) {
 	bobSignedPreKeyPair, err := curve.GenerateKeyPair(random)
 	require.NoError(t, err)
 
-	bobSignedPreKeyPublic := bobSignedPreKeyPair.PublicKey().Bytes()
-	bobSignedPreKeySignature, err := bobStore.IdentityStore().KeyPair(ctx).PrivateKey().Sign(random, bobSignedPreKeyPublic)
+	bobSignedPreKeyPublic := bobSignedPreKeyPair.PublicKey.Bytes()
+	bobSignedPreKeySignature, err := bobStore.IdentityStore().KeyPair(ctx).PrivateKey.Sign(random, bobSignedPreKeyPublic)
 	assert.NoError(t, err)
 
 	signedPreKeyID := prekey.ID(22)
@@ -587,9 +587,9 @@ func TestOptionalOneTimePreKey(t *testing.T) {
 		PreKeyID:              nil,
 		PreKeyPublic:          nil,
 		SignedPreKeyID:        signedPreKeyID,
-		SignedPreKeyPublic:    bobSignedPreKeyPair.PublicKey(),
+		SignedPreKeyPublic:    bobSignedPreKeyPair.PublicKey,
 		SignedPreKeySignature: bobSignedPreKeySignature,
-		IdentityKey:           bobStore.IdentityStore().KeyPair(ctx).IdentityKey(),
+		IdentityKey:           bobStore.IdentityStore().KeyPair(ctx).IdentityKey,
 	}
 
 	aliceSession := &session.Session{

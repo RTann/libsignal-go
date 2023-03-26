@@ -35,7 +35,7 @@ type Session struct {
 // This method returns the one-time pre-key used by "Alice" when sending the initial message,
 // if one was used.
 func (s *Session) ProcessPreKey(ctx context.Context, record *Record, message *message.PreKey) (*prekey.ID, error) {
-	theirIdentityKey := message.IdentityKey()
+	theirIdentityKey := message.IdentityKey
 
 	trusted, err := s.IdentityKeyStore.IsTrustedIdentity(ctx, s.RemoteAddress, theirIdentityKey, direction.Receiving)
 	if err != nil {
@@ -59,7 +59,7 @@ func (s *Session) ProcessPreKey(ctx context.Context, record *Record, message *me
 }
 
 func (s *Session) processPreKeyV3(ctx context.Context, record *Record, message *message.PreKey) (*prekey.ID, error) {
-	exists, err := record.HasSessionState(uint32(message.Version()), message.BaseKeyBytes())
+	exists, err := record.HasSessionState(uint32(message.Version), message.BaseKey.Bytes())
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +69,7 @@ func (s *Session) processPreKeyV3(ctx context.Context, record *Record, message *
 	}
 
 	var ourSignedPreKeyPair *curve.KeyPair
-	ourSignedPreKeyRecord, exists, err := s.SignedPreKeyStore.Load(ctx, message.SignedPreKeyID())
+	ourSignedPreKeyRecord, exists, err := s.SignedPreKeyStore.Load(ctx, message.SignedPreKeyID)
 	if err != nil {
 		return nil, err
 	}
@@ -81,12 +81,12 @@ func (s *Session) processPreKeyV3(ctx context.Context, record *Record, message *
 	}
 
 	var ourOneTimePreKeyPair *curve.KeyPair
-	if message.PreKeyID() == nil {
+	if message.PreKeyID == nil {
 		glog.Warningf("processing PreKey message from %s which had no one-time pre-key", s.RemoteAddress)
 	} else {
 		glog.Infof("processing PreKey message from %s", s.RemoteAddress)
 
-		ourOneTimePreKeyRecord, exists, err := s.PreKeyStore.Load(ctx, *message.PreKeyID())
+		ourOneTimePreKeyRecord, exists, err := s.PreKeyStore.Load(ctx, *message.PreKeyID)
 		if err != nil {
 			return nil, err
 		}
@@ -103,17 +103,17 @@ func (s *Session) processPreKeyV3(ctx context.Context, record *Record, message *
 		OurSignedPreKeyPair:  ourSignedPreKeyPair,
 		OurOneTimePreKeyPair: ourOneTimePreKeyPair,
 		OurRatchetKeyPair:    ourSignedPreKeyPair,
-		TheirIdentityKey:     message.IdentityKey(),
-		TheirBaseKey:         message.BaseKey(),
+		TheirIdentityKey:     message.IdentityKey,
+		TheirBaseKey:         message.BaseKey,
 	})
 
 	session.SetLocalRegistrationID(s.IdentityKeyStore.LocalRegistrationID(ctx))
-	session.SetRemoteRegistrationID(message.RegistrationID())
-	session.SetAliceBaseKey(message.BaseKeyBytes())
+	session.SetRemoteRegistrationID(message.RegistrationID)
+	session.SetAliceBaseKey(message.BaseKey.Bytes())
 
 	record.PromoteState(session)
 
-	return message.PreKeyID(), nil
+	return message.PreKeyID, nil
 }
 
 // ProcessPreKeyBundle processes a pre-key bundle to initialize an "Alice" session
@@ -129,7 +129,7 @@ func (s *Session) ProcessPreKeyBundle(ctx context.Context, random io.Reader, bun
 		return errors.New("untrusted identity")
 	}
 
-	ok, err := theirIdentityKey.PublicKey().VerifySignature(bundle.SignedPreKeySignature, bundle.SignedPreKeyPublic.Bytes())
+	ok, err := theirIdentityKey.PublicKey.VerifySignature(bundle.SignedPreKeySignature, bundle.SignedPreKeyPublic.Bytes())
 	if err != nil {
 		return err
 	}
@@ -172,11 +172,11 @@ func (s *Session) ProcessPreKeyBundle(ctx context.Context, random io.Reader, bun
 	}
 	glog.Infof("set_unacknowledged_pre_key_message for: %s with preKeyId: %s", s.RemoteAddress, preKeyString)
 
-	session.SetUnacknowledgedPreKeyMessage(theirOneTimePreKeyID, bundle.SignedPreKeyID, ourBaseKeyPair.PublicKey())
+	session.SetUnacknowledgedPreKeyMessage(theirOneTimePreKeyID, bundle.SignedPreKeyID, ourBaseKeyPair.PublicKey)
 
 	session.SetLocalRegistrationID(s.IdentityKeyStore.LocalRegistrationID(ctx))
 	session.SetRemoteRegistrationID(bundle.RegistrationID)
-	session.SetAliceBaseKey(ourBaseKeyPair.PublicKey().Bytes())
+	session.SetAliceBaseKey(ourBaseKeyPair.PublicKey.Bytes())
 
 	_, err = s.IdentityKeyStore.Store(ctx, s.RemoteAddress, theirIdentityKey)
 	if err != nil {
@@ -203,19 +203,19 @@ func InitializeAliceSessionRecord(random io.Reader, params *ratchet.AliceParamet
 }
 
 func initializeAliceSession(random io.Reader, params *ratchet.AliceParameters) (*State, error) {
-	localIdentity := params.OurIdentityKeyPair.IdentityKey()
+	localIdentity := params.OurIdentityKeyPair.IdentityKey
 	sendingRatchetKeyPair, err := curve.GenerateKeyPair(random)
 	if err != nil {
 		return nil, err
 	}
 
-	dh1, err := params.OurIdentityKeyPair.PrivateKey().Agreement(params.TheirSignedPreKey)
+	dh1, err := params.OurIdentityKeyPair.PrivateKey.Agreement(params.TheirSignedPreKey)
 	if err != nil {
 		return nil, err
 	}
 
-	ourBasePrivateKey := params.OurBaseKeyPair.PrivateKey()
-	dh2, err := ourBasePrivateKey.Agreement(params.TheirIdentityKey.PublicKey())
+	ourBasePrivateKey := params.OurBaseKeyPair.PrivateKey
+	dh2, err := ourBasePrivateKey.Agreement(params.TheirIdentityKey.PublicKey)
 	if err != nil {
 		return nil, err
 	}
@@ -245,14 +245,14 @@ func initializeAliceSession(random io.Reader, params *ratchet.AliceParameters) (
 		return nil, err
 	}
 
-	sendingChainRootKey, sendingChainChainKey, err := rootKey.CreateChain(sendingRatchetKeyPair.PrivateKey(), params.TheirRatchetKey)
+	sendingChainRootKey, sendingChainChainKey, err := rootKey.CreateChain(sendingRatchetKeyPair.PrivateKey, params.TheirRatchetKey)
 	if err != nil {
 		return nil, err
 	}
 
 	session := NewState(&v1.SessionStructure{
 		SessionVersion:       message.CiphertextVersion,
-		LocalIdentityPublic:  localIdentity.PublicKey().Bytes(),
+		LocalIdentityPublic:  localIdentity.PublicKey.Bytes(),
 		RemoteIdentityPublic: params.TheirIdentityKey.Bytes(),
 		RootKey:              sendingChainRootKey.Bytes(),
 	})
@@ -272,19 +272,19 @@ func InitializeBobSessionRecord(params *ratchet.BobParameters) (*Record, error) 
 }
 
 func initializeBobSession(params *ratchet.BobParameters) (*State, error) {
-	localIdentity := params.OurIdentityKeyPair.IdentityKey()
+	localIdentity := params.OurIdentityKeyPair.IdentityKey
 
-	dh1, err := params.OurSignedPreKeyPair.PrivateKey().Agreement(params.TheirIdentityKey.PublicKey())
+	dh1, err := params.OurSignedPreKeyPair.PrivateKey.Agreement(params.TheirIdentityKey.PublicKey)
 	if err != nil {
 		return nil, err
 	}
 
-	dh2, err := params.OurIdentityKeyPair.PrivateKey().Agreement(params.TheirBaseKey)
+	dh2, err := params.OurIdentityKeyPair.PrivateKey.Agreement(params.TheirBaseKey)
 	if err != nil {
 		return nil, err
 	}
 
-	dh3, err := params.OurSignedPreKeyPair.PrivateKey().Agreement(params.TheirBaseKey)
+	dh3, err := params.OurSignedPreKeyPair.PrivateKey.Agreement(params.TheirBaseKey)
 	if err != nil {
 		return nil, err
 	}
@@ -297,7 +297,7 @@ func initializeBobSession(params *ratchet.BobParameters) (*State, error) {
 	secrets.Write(dh3)
 
 	if params.OurOneTimePreKeyPair != nil {
-		dh4, err := params.OurOneTimePreKeyPair.PrivateKey().Agreement(params.TheirBaseKey)
+		dh4, err := params.OurOneTimePreKeyPair.PrivateKey.Agreement(params.TheirBaseKey)
 		if err != nil {
 			return nil, err
 		}
@@ -309,7 +309,7 @@ func initializeBobSession(params *ratchet.BobParameters) (*State, error) {
 
 	session := NewState(&v1.SessionStructure{
 		SessionVersion:       message.CiphertextVersion,
-		LocalIdentityPublic:  localIdentity.PublicKey().Bytes(),
+		LocalIdentityPublic:  localIdentity.PublicKey.Bytes(),
 		RemoteIdentityPublic: params.TheirIdentityKey.Bytes(),
 		RootKey:              rootKey.Bytes(),
 	})
