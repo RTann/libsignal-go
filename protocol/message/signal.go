@@ -13,47 +13,49 @@ import (
 	"github.com/RTann/libsignal-go/protocol/curve"
 	v1 "github.com/RTann/libsignal-go/protocol/generated/v1"
 	"github.com/RTann/libsignal-go/protocol/identity"
-	"github.com/RTann/libsignal-go/protocol/internal/pointer"
 )
 
 var _ Ciphertext = (*Signal)(nil)
 
 // Signal represents a typical ciphertext message.
 type Signal struct {
-	messageVersion  uint8
-	senderRachetKey curve.PublicKey
-	previousCounter uint32
-	counter         uint32
-	ciphertext      []byte
-	serialized      []byte
+	version          uint8
+	senderRatchetKey curve.PublicKey
+	previousCounter  uint32
+	counter          uint32
+	ciphertext       []byte
+	serialized       []byte
 }
 
-func NewSignal(
-	messageVersion uint8,
-	macKey []byte,
-	senderRatchetKey curve.PublicKey,
-	counter,
-	previousCounter uint32,
-	ciphertext []byte,
-	senderIdentityKey,
-	receiverIdentityKey identity.Key,
-) (Ciphertext, error) {
+// SignalConfig represents the configuration for a Signal message.
+type SignalConfig struct {
+	Version             uint8
+	MACKey              []byte
+	SenderRatchetKey    curve.PublicKey
+	PreviousCounter     uint32
+	Counter             uint32
+	Ciphertext          []byte
+	SenderIdentityKey   identity.Key
+	ReceiverIdentityKey identity.Key
+}
+
+func NewSignal(cfg SignalConfig) (Ciphertext, error) {
 	message, err := proto.Marshal(&v1.SignalMessage{
-		RatchetKey:      senderRatchetKey.Bytes(),
-		Counter:         pointer.To(counter),
-		PreviousCounter: pointer.To(previousCounter),
-		Ciphertext:      ciphertext,
+		RatchetKey:      cfg.SenderRatchetKey.Bytes(),
+		Counter:         &cfg.Counter,
+		PreviousCounter: &cfg.PreviousCounter,
+		Ciphertext:      cfg.Ciphertext,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	versionPrefix := ((messageVersion & 0xF) << 4) | CiphertextVersion
+	versionPrefix := ((cfg.Version & 0xF) << 4) | CiphertextVersion
 	serialized := bytes.NewBuffer(make([]byte, 0, 1+len(message)+macSize))
 	serialized.WriteByte(versionPrefix)
 	serialized.Write(message)
 
-	mac, err := HMAC(macKey, senderIdentityKey, receiverIdentityKey, serialized.Bytes())
+	mac, err := HMAC(cfg.MACKey, cfg.SenderIdentityKey, cfg.ReceiverIdentityKey, serialized.Bytes())
 	if err != nil {
 		return nil, err
 	}
@@ -61,12 +63,12 @@ func NewSignal(
 	serialized.Write(mac)
 
 	return &Signal{
-		messageVersion:  messageVersion,
-		senderRachetKey: senderRatchetKey,
-		previousCounter: previousCounter,
-		counter:         counter,
-		ciphertext:      ciphertext,
-		serialized:      serialized.Bytes(),
+		version:          cfg.Version,
+		senderRatchetKey: cfg.SenderRatchetKey,
+		previousCounter:  cfg.PreviousCounter,
+		counter:          cfg.Counter,
+		ciphertext:       cfg.Ciphertext,
+		serialized:       serialized.Bytes(),
 	}, nil
 }
 
@@ -75,9 +77,9 @@ func NewSignalMessageFromBytes(bytes []byte) (Ciphertext, error) {
 		return nil, errors.New("message too short")
 	}
 
-	messageVersion := bytes[0] >> 4
-	if int(messageVersion) != CiphertextVersion {
-		return nil, fmt.Errorf("unsupported message version: %d != %d", int(messageVersion), CiphertextVersion)
+	version := bytes[0] >> 4
+	if int(version) != CiphertextVersion {
+		return nil, fmt.Errorf("unsupported message version: %d != %d", int(version), CiphertextVersion)
 	}
 
 	var message v1.SignalMessage
@@ -92,12 +94,12 @@ func NewSignalMessageFromBytes(bytes []byte) (Ciphertext, error) {
 	}
 
 	return &Signal{
-		messageVersion:  messageVersion,
-		senderRachetKey: senderRatchetKey,
-		previousCounter: message.GetPreviousCounter(),
-		counter:         message.GetCounter(),
-		ciphertext:      message.GetCiphertext(),
-		serialized:      bytes,
+		version:          version,
+		senderRatchetKey: senderRatchetKey,
+		previousCounter:  message.GetPreviousCounter(),
+		counter:          message.GetCounter(),
+		ciphertext:       message.GetCiphertext(),
+		serialized:       bytes,
 	}, nil
 }
 
@@ -114,11 +116,11 @@ func (s *Signal) Message() []byte {
 }
 
 func (s *Signal) Version() uint8 {
-	return s.messageVersion
+	return s.version
 }
 
 func (s *Signal) SenderRatchetKey() curve.PublicKey {
-	return s.senderRachetKey
+	return s.senderRatchetKey
 }
 
 func (s *Signal) Counter() uint32 {
