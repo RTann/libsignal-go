@@ -55,7 +55,7 @@ func NewSignal(cfg SignalConfig) (Ciphertext, error) {
 	serialized.WriteByte(versionPrefix)
 	serialized.Write(message)
 
-	mac, err := HMAC(cfg.MACKey, cfg.SenderIdentityKey, cfg.ReceiverIdentityKey, serialized.Bytes())
+	mac, err := mac(cfg.MACKey, cfg.SenderIdentityKey, cfg.ReceiverIdentityKey, serialized.Bytes())
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +132,7 @@ func (s *Signal) Counter() uint32 {
 //
 // The MAC is expected to be an HMAC.
 func (s *Signal) VerifyMAC(macKey []byte, senderIdentityKey, receiverIdentityKey identity.Key) (bool, error) {
-	ourMAC, err := HMAC(macKey, senderIdentityKey, receiverIdentityKey, s.serialized[:len(s.serialized)-macSize])
+	ourMAC, err := mac(macKey, senderIdentityKey, receiverIdentityKey, s.serialized[:len(s.serialized)-macSize])
 	if err != nil {
 		return false, err
 	}
