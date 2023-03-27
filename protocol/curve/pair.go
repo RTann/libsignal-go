@@ -29,17 +29,10 @@ func GenerateKeyPair(random io.Reader) (*KeyPair, error) {
 }
 
 // NewKeyPair returns a public/private key pair from the given pair.
-func NewKeyPair(privateKey PrivateKey, publicKey PublicKey) *KeyPair {
-	return &KeyPair{
-		privateKey: privateKey,
-		publicKey:  publicKey,
-	}
-}
-
-// NewKeyPairFromBytes returns a public/private key pair from the given pair.
+//
 // The given pair is expected to represent a valid curve.PrivateKey and
 // curve.PublicKey, respectively.
-func NewKeyPairFromBytes(privateKey, publicKey []byte) (*KeyPair, error) {
+func NewKeyPair(privateKey, publicKey []byte) (*KeyPair, error) {
 	private, err := NewPrivateKey(privateKey)
 	if err != nil {
 		return nil, err
@@ -49,7 +42,10 @@ func NewKeyPairFromBytes(privateKey, publicKey []byte) (*KeyPair, error) {
 		return nil, err
 	}
 
-	return NewKeyPair(private, public), nil
+	return &KeyPair{
+		privateKey: private,
+		publicKey:  public,
+	}, nil
 }
 
 // PrivateKey returns the pair's private key.
@@ -68,7 +64,8 @@ func (k *KeyPair) Agreement(key PublicKey) ([]byte, error) {
 	return k.privateKey.Agreement(key)
 }
 
-// Sign calculates the digital signature of the messages using the key pair's private key.
+// Sign calculates the digital signature of the messages using
+// the key pair's private key.
 func (k *KeyPair) Sign(random io.Reader, messages ...[]byte) ([]byte, error) {
 	return k.privateKey.Sign(random, messages...)
 }

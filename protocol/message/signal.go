@@ -72,7 +72,7 @@ func NewSignal(cfg SignalConfig) (Ciphertext, error) {
 	}, nil
 }
 
-func NewSignalMessageFromBytes(bytes []byte) (Ciphertext, error) {
+func NewSignalFromBytes(bytes []byte) (Ciphertext, error) {
 	if len(bytes) == 0 {
 		return nil, errors.New("message too short")
 	}

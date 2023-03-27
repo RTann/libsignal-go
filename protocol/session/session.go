@@ -59,7 +59,7 @@ func (s *Session) ProcessPreKey(ctx context.Context, record *Record, message *me
 }
 
 func (s *Session) processPreKeyV3(ctx context.Context, record *Record, message *message.PreKey) (*prekey.ID, error) {
-	exists, err := record.HasSessionState(uint32(message.Version()), message.BaseKeyBytes())
+	exists, err := record.HasSessionState(uint32(message.Version()), message.BaseKey().Bytes())
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +109,7 @@ func (s *Session) processPreKeyV3(ctx context.Context, record *Record, message *
 
 	session.SetLocalRegistrationID(s.IdentityKeyStore.LocalRegistrationID(ctx))
 	session.SetRemoteRegistrationID(message.RegistrationID())
-	session.SetAliceBaseKey(message.BaseKeyBytes())
+	session.SetAliceBaseKey(message.BaseKey().Bytes())
 
 	record.PromoteState(session)
 

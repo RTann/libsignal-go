@@ -66,7 +66,7 @@ func (s *State) RemoteIdentityKey() (identity.Key, bool, error) {
 		return identity.Key{}, false, nil
 	}
 
-	remoteKey, err := identity.NewKeyFromBytes(remoteBytes)
+	remoteKey, err := identity.NewKey(remoteBytes)
 	if err != nil {
 		return identity.Key{}, false, err
 	}
@@ -75,7 +75,7 @@ func (s *State) RemoteIdentityKey() (identity.Key, bool, error) {
 }
 
 func (s *State) LocalIdentityKey() (identity.Key, error) {
-	return identity.NewKeyFromBytes(s.session.GetLocalIdentityPublic())
+	return identity.NewKey(s.session.GetLocalIdentityPublic())
 }
 
 func (s *State) SessionWithSelf() (bool, error) {
