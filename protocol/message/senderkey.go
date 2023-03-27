@@ -11,59 +11,59 @@ import (
 	"github.com/RTann/libsignal-go/protocol/curve"
 	"github.com/RTann/libsignal-go/protocol/distribution"
 	v1 "github.com/RTann/libsignal-go/protocol/generated/v1"
-	"github.com/RTann/libsignal-go/protocol/internal/pointer"
 	"github.com/RTann/libsignal-go/protocol/perrors"
 )
 
 var _ Ciphertext = (*SenderKey)(nil)
 
 type SenderKey struct {
-	messageVersion uint8
-	distributionID distribution.ID
-	chainID        uint32
-	iteration      uint32
-	ciphertext     []byte
-	serialized     []byte
+	version    uint8
+	distID     distribution.ID
+	chainID    uint32
+	iteration  uint32
+	ciphertext []byte
+	serialized []byte
 }
 
-func NewSenderKey(
-	random io.Reader,
-	messageVersion uint8,
-	distributionID distribution.ID,
-	chainID,
-	iteration uint32,
-	ciphertext []byte,
-	signatureKey curve.PrivateKey,
-) (*SenderKey, error) {
+type SenderKeyConfig struct {
+	Version      uint8
+	DistID       distribution.ID
+	ChainID      uint32
+	Iteration    uint32
+	Ciphertext   []byte
+	SignatureKey curve.PrivateKey
+}
+
+func NewSenderKey(random io.Reader, cfg SenderKeyConfig) (*SenderKey, error) {
 	message, err := proto.Marshal(&v1.SenderKeyMessage{
-		DistributionUuid: []byte(distributionID.String()),
-		ChainId:          pointer.To(chainID),
-		Iteration:        pointer.To(iteration),
-		Ciphertext:       ciphertext,
+		DistributionUuid: []byte(cfg.DistID.String()),
+		ChainId:          &cfg.ChainID,
+		Iteration:        &cfg.Iteration,
+		Ciphertext:       cfg.Ciphertext,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	versionPrefix := ((messageVersion & 0xF) << 4) | SenderKeyVersion
+	versionPrefix := ((cfg.Version & 0xF) << 4) | SenderKeyVersion
 
 	serialized := bytes.NewBuffer(make([]byte, 0, 1+len(message)+64))
 	serialized.WriteByte(versionPrefix)
 	serialized.Write(message)
 
-	signature, err := signatureKey.Sign(random, serialized.Bytes())
+	signature, err := cfg.SignatureKey.Sign(random, serialized.Bytes())
 	if err != nil {
 		return nil, err
 	}
 	serialized.Write(signature)
 
 	return &SenderKey{
-		messageVersion: SenderKeyVersion,
-		distributionID: distributionID,
-		chainID:        chainID,
-		iteration:      iteration,
-		ciphertext:     ciphertext,
-		serialized:     serialized.Bytes(),
+		version:    SenderKeyVersion,
+		distID:     cfg.DistID,
+		chainID:    cfg.ChainID,
+		iteration:  cfg.Iteration,
+		ciphertext: cfg.Ciphertext,
+		serialized: serialized.Bytes(),
 	}, nil
 }
 
@@ -76,11 +76,11 @@ func (s *SenderKey) Bytes() []byte {
 }
 
 func (s *SenderKey) Version() uint8 {
-	return s.messageVersion
+	return s.version
 }
 
 func (s *SenderKey) DistributionID() distribution.ID {
-	return s.distributionID
+	return s.distID
 }
 
 func (s *SenderKey) ChainID() uint32 {
@@ -101,48 +101,50 @@ func (s *SenderKey) VerifySignature(signatureKey curve.PublicKey) (bool, error) 
 }
 
 type SenderKeyDistribution struct {
-	messageVersion uint8
-	distributionID distribution.ID
-	chainID        uint32
-	iteration      uint32
-	chainKey       []byte
-	signingKey     curve.PublicKey
-	serialized     []byte
+	version    uint8
+	distID     distribution.ID
+	chainID    uint32
+	iteration  uint32
+	chainKey   []byte
+	signingKey curve.PublicKey
+	serialized []byte
 }
 
-func NewSenderKeyDistribution(
-	messageVersion uint8,
-	distributionID distribution.ID,
-	chainID,
-	iteration uint32,
-	chainKey []byte,
-	signingKey curve.PublicKey,
-) (*SenderKeyDistribution, error) {
+type SenderKeyDistConfig struct {
+	Version    uint8
+	DistID     distribution.ID
+	ChainID    uint32
+	Iteration  uint32
+	ChainKey   []byte
+	SigningKey curve.PublicKey
+}
+
+func NewSenderKeyDistribution(cfg SenderKeyDistConfig) (*SenderKeyDistribution, error) {
 	message, err := proto.Marshal(&v1.SenderKeyDistributionMessage{
-		DistributionUuid: []byte(distributionID.String()),
-		ChainId:          pointer.To(chainID),
-		Iteration:        pointer.To(iteration),
-		ChainKey:         chainKey,
-		SigningKey:       signingKey.Bytes(),
+		DistributionUuid: []byte(cfg.DistID.String()),
+		ChainId:          &cfg.ChainID,
+		Iteration:        &cfg.Iteration,
+		ChainKey:         cfg.ChainKey,
+		SigningKey:       cfg.SigningKey.Bytes(),
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	versionPrefix := ((messageVersion & 0xF) << 4) | SenderKeyVersion
+	versionPrefix := ((cfg.Version & 0xF) << 4) | SenderKeyVersion
 
 	serialized := bytes.NewBuffer(make([]byte, 0, 1+len(message)))
 	serialized.WriteByte(versionPrefix)
 	serialized.Write(message)
 
 	return &SenderKeyDistribution{
-		messageVersion: messageVersion,
-		distributionID: distributionID,
-		chainID:        chainID,
-		iteration:      iteration,
-		chainKey:       chainKey,
-		signingKey:     signingKey,
-		serialized:     serialized.Bytes(),
+		version:    cfg.Version,
+		distID:     cfg.DistID,
+		chainID:    cfg.ChainID,
+		iteration:  cfg.Iteration,
+		chainKey:   cfg.ChainKey,
+		signingKey: cfg.SigningKey,
+		serialized: serialized.Bytes(),
 	}, nil
 }
 
@@ -163,7 +165,7 @@ func NewSenderKeyDistributionFromBytes(bytes []byte) (*SenderKeyDistribution, er
 		return nil, err
 	}
 
-	distributionID, err := distribution.ParseBytes(message.GetDistributionUuid())
+	distID, err := distribution.ParseBytes(message.GetDistributionUuid())
 	if err != nil {
 		return nil, err
 	}
@@ -179,13 +181,13 @@ func NewSenderKeyDistributionFromBytes(bytes []byte) (*SenderKeyDistribution, er
 	}
 
 	return &SenderKeyDistribution{
-		messageVersion: messageVersion,
-		distributionID: distributionID,
-		chainID:        chainID,
-		iteration:      iteration,
-		chainKey:       chainKey,
-		signingKey:     signingKey,
-		serialized:     bytes,
+		version:    messageVersion,
+		distID:     distID,
+		chainID:    chainID,
+		iteration:  iteration,
+		chainKey:   chainKey,
+		signingKey: signingKey,
+		serialized: bytes,
 	}, nil
 }
 
@@ -194,11 +196,11 @@ func (s *SenderKeyDistribution) Bytes() []byte {
 }
 
 func (s *SenderKeyDistribution) Version() uint8 {
-	return s.messageVersion
+	return s.version
 }
 
 func (s *SenderKeyDistribution) DistributionID() distribution.ID {
-	return s.distributionID
+	return s.distID
 }
 
 func (s *SenderKeyDistribution) ChainID() uint32 {

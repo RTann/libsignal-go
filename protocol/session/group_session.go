@@ -101,12 +101,12 @@ func (g *GroupSession) NewSenderKeyDistributionMessage(ctx context.Context, rand
 		return nil, err
 	}
 
-	return message.NewSenderKeyDistribution(
-		uint8(state.Version()),
-		g.LocalDistID,
-		state.ChainID(),
-		senderChainKey.Iteration(),
-		senderChainKey.Seed(),
-		signingKey,
-	)
+	return message.NewSenderKeyDistribution(message.SenderKeyDistConfig{
+		Version:    uint8(state.Version()),
+		DistID:     g.LocalDistID,
+		ChainID:    state.ChainID(),
+		Iteration:  senderChainKey.Iteration(),
+		ChainKey:   senderChainKey.Seed(),
+		SigningKey: signingKey,
+	})
 }

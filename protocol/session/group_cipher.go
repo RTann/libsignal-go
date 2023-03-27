@@ -45,15 +45,14 @@ func (g *GroupSession) EncryptMessage(ctx context.Context, random io.Reader, pla
 		return nil, err
 	}
 
-	msg, err := message.NewSenderKey(
-		random,
-		uint8(state.Version()),
-		g.LocalDistID,
-		state.ChainID(),
-		messageKeys.Iteration(),
-		ciphertext,
-		signingKey,
-	)
+	msg, err := message.NewSenderKey(random, message.SenderKeyConfig{
+		Version:      uint8(state.Version()),
+		DistID:       g.LocalDistID,
+		ChainID:      state.ChainID(),
+		Iteration:    messageKeys.Iteration(),
+		Ciphertext:   ciphertext,
+		SignatureKey: signingKey,
+	})
 	if err != nil {
 		return nil, err
 	}

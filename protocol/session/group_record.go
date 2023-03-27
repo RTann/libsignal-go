@@ -71,7 +71,7 @@ func (g *GroupRecord) RemoveState(chainID uint32, signatureKey curve.PublicKey) 
 		if err != nil {
 			continue
 		}
-		if state.ChainID() == chainID && curve.PublicKeyEqual(signatureKey, publicKey) {
+		if state.ChainID() == chainID && signatureKey.Equal(publicKey) {
 			idx = i
 			break
 		}
