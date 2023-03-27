@@ -90,11 +90,11 @@ func NewPreKeyFromBytes(bytes []byte) (Ciphertext, error) {
 	if err != nil {
 		return nil, err
 	}
-	identityKey, err := identity.NewKeyFromBytes(message.GetIdentityKey())
+	identityKey, err := identity.NewKey(message.GetIdentityKey())
 	if err != nil {
 		return nil, err
 	}
-	signalMessage, err := NewSignalMessageFromBytes(message.GetMessage())
+	msg, err := NewSignalFromBytes(message.GetMessage())
 	if err != nil {
 		return nil, err
 	}
@@ -106,7 +106,7 @@ func NewPreKeyFromBytes(bytes []byte) (Ciphertext, error) {
 		signedPreKeyID: prekey.ID(message.GetSignedPreKeyId()),
 		baseKey:        baseKey,
 		identityKey:    identityKey,
-		message:        signalMessage.(*Signal),
+		message:        msg.(*Signal),
 		serialized:     bytes,
 	}, nil
 }
@@ -137,10 +137,6 @@ func (p *PreKey) SignedPreKeyID() prekey.ID {
 
 func (p *PreKey) BaseKey() curve.PublicKey {
 	return p.baseKey
-}
-
-func (p *PreKey) BaseKeyBytes() []byte {
-	return p.baseKey.Bytes()
 }
 
 func (p *PreKey) IdentityKey() identity.Key {

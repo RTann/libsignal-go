@@ -12,7 +12,9 @@ func TestIdentityKey(t *testing.T) {
 	pair, err := GenerateKeyPair(rand.Reader)
 	require.NoError(t, err)
 
-	key := NewKey(pair.PublicKey())
+	key := Key{
+		publicKey: pair.PublicKey(),
+	}
 	assert.Equal(t, pair.PublicKey().Bytes(), key.Bytes())
 }
 

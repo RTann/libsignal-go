@@ -34,18 +34,18 @@ func TestBobSession(t *testing.T) {
 
 	expectedSenderChain := "9797caca53c989bbe229a40ca7727010eb2604fc14945d77958a0aeda088b44d"
 
-	bobIdentityKeyPublic, err := identity.NewKeyFromBytes(bobIdentityPublic)
-	require.NoError(t, err)
 	bobIdentityKeyPrivate, err := curve.NewPrivateKey(bobIdentityPrivate)
 	require.NoError(t, err)
-	bobIdentityKeyPair := identity.NewKeyPair(bobIdentityKeyPublic, bobIdentityKeyPrivate)
-
-	bobEphemeralPair, err := curve.NewKeyPairFromBytes(bobEphemeralPrivate, bobEphemeralPublic)
+	bobIdentityKeyPublic, err := identity.NewKey(bobIdentityPublic)
 	require.NoError(t, err)
-	bobSignedPreKeyPair, err := curve.NewKeyPairFromBytes(bobSignedPreKeyPrivate, bobSignedPreKeyPublic)
+	bobIdentityKeyPair := identity.NewKeyPair(bobIdentityKeyPrivate, bobIdentityKeyPublic)
+
+	bobEphemeralPair, err := curve.NewKeyPair(bobEphemeralPrivate, bobEphemeralPublic)
+	require.NoError(t, err)
+	bobSignedPreKeyPair, err := curve.NewKeyPair(bobSignedPreKeyPrivate, bobSignedPreKeyPublic)
 	require.NoError(t, err)
 
-	aliceIdentityPublicKey, err := identity.NewKeyFromBytes(aliceIdentityPublic)
+	aliceIdentityPublicKey, err := identity.NewKey(aliceIdentityPublic)
 	require.NoError(t, err)
 	aliceBasePublicKey, err := curve.NewPublicKey(aliceBasePublic)
 	require.NoError(t, err)
@@ -94,16 +94,16 @@ func TestAliceSession(t *testing.T) {
 
 	expectedReceiverChain := "ab9be50e5cb22a925446ab90ee5670545f4fd32902459ec274b6ad0ae5d6031a"
 
-	aliceIdentityKeyPublic, err := identity.NewKeyFromBytes(aliceIdentityPublic)
-	require.NoError(t, err)
 	aliceIdentityKeyPrivate, err := curve.NewPrivateKey(aliceIdentityPrivate)
 	require.NoError(t, err)
-	aliceIdentityKeyPair := identity.NewKeyPair(aliceIdentityKeyPublic, aliceIdentityKeyPrivate)
+	aliceIdentityKeyPublic, err := identity.NewKey(aliceIdentityPublic)
+	require.NoError(t, err)
+	aliceIdentityKeyPair := identity.NewKeyPair(aliceIdentityKeyPrivate, aliceIdentityKeyPublic)
 
-	aliceBaseKeyPair, err := curve.NewKeyPairFromBytes(aliceBasePrivate, aliceBasePublic)
+	aliceBaseKeyPair, err := curve.NewKeyPair(aliceBasePrivate, aliceBasePublic)
 	require.NoError(t, err)
 
-	bobIdentityKey, err := identity.NewKeyFromBytes(bobIdentityPublic)
+	bobIdentityKey, err := identity.NewKey(bobIdentityPublic)
 	require.NoError(t, err)
 
 	bobEphemeralKeyPublic, err := curve.NewPublicKey(bobEphemeralPublic)

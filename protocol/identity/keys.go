@@ -21,21 +21,16 @@ type Key struct {
 	publicKey curve.PublicKey
 }
 
-// NewKey returns a public identity key from the given public key.
-func NewKey(key curve.PublicKey) Key {
-	return Key{
-		publicKey: key,
-	}
-}
-
-// NewKeyFromBytes returns a public identity key from the given key bytes.
-func NewKeyFromBytes(key []byte) (Key, error) {
+// NewKey returns a public identity key from the given key bytes.
+func NewKey(key []byte) (Key, error) {
 	publicKey, err := curve.NewPublicKey(key)
 	if err != nil {
 		return Key{}, err
 	}
 
-	return NewKey(publicKey), nil
+	return Key{
+		publicKey: publicKey,
+	}, nil
 }
 
 // PublicKey returns the identity key's public key.
@@ -67,8 +62,8 @@ func (k Key) Equal(key Key) bool {
 
 // KeyPair represents a public/private identity key pair.
 type KeyPair struct {
-	identityKey Key
 	privateKey  curve.PrivateKey
+	identityKey Key
 }
 
 // GenerateKeyPair generates an identity key pair using the given random reader.
@@ -82,17 +77,19 @@ func GenerateKeyPair(random io.Reader) (KeyPair, error) {
 	}
 
 	return KeyPair{
-		identityKey: NewKey(pair.PublicKey()),
-		privateKey:  pair.PrivateKey(),
+		privateKey: pair.PrivateKey(),
+		identityKey: Key{
+			publicKey: pair.PublicKey(),
+		},
 	}, nil
 }
 
 // NewKeyPair returns an identity key pair based on the given
 // public and private keys.
-func NewKeyPair(identityKey Key, privateKey curve.PrivateKey) KeyPair {
+func NewKeyPair(privateKey curve.PrivateKey, identityKey Key) KeyPair {
 	return KeyPair{
-		identityKey: identityKey,
 		privateKey:  privateKey,
+		identityKey: identityKey,
 	}
 }
 

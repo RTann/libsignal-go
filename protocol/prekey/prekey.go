@@ -33,5 +33,5 @@ func NewPreKey(id ID, key *curve.KeyPair) *PreKey {
 
 // KeyPair returns the pre-key's public/private key pair.
 func (s *PreKey) KeyPair() (*curve.KeyPair, error) {
-	return curve.NewKeyPairFromBytes(s.preKey.GetPrivateKey(), s.preKey.GetPublicKey())
+	return curve.NewKeyPair(s.preKey.GetPrivateKey(), s.preKey.GetPublicKey())
 }
