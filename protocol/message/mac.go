@@ -13,9 +13,9 @@ const (
 	macSize    = 8
 )
 
-// HMAC calculates a message authentication code for the
+// mac calculates a message authentication code for the
 // given message and keys via the Keyed-Hash Message Authentication Code.
-func HMAC(macKey []byte, senderIdentityKey, receiverIdentityKey identity.Key, message []byte) ([]byte, error) {
+func mac(macKey []byte, senderIdentityKey, receiverIdentityKey identity.Key, message []byte) ([]byte, error) {
 	if len(macKey) != macKeySize {
 		return nil, perrors.ErrInvalidKeyLength(macKeySize, len(macKey))
 	}
@@ -25,6 +25,6 @@ func HMAC(macKey []byte, senderIdentityKey, receiverIdentityKey identity.Key, me
 	hash.Write(receiverIdentityKey.Bytes())
 	hash.Write(message)
 
-	mac := make([]byte, 0, sha256.Size)
-	return hash.Sum(mac)[:macSize], nil
+	m := make([]byte, 0, sha256.Size)
+	return hash.Sum(m)[:macSize], nil
 }
