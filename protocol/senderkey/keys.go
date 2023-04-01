@@ -8,8 +8,6 @@ import (
 	"io"
 
 	"golang.org/x/crypto/hkdf"
-
-	v1 "github.com/RTann/libsignal-go/protocol/generated/v1"
 )
 
 const (
@@ -100,14 +98,4 @@ func hash(key, seed []byte) []byte {
 	hash.Write(seed)
 	buf = hash.Sum(buf)
 	return buf
-}
-
-func (c ChainKey) Proto() *v1.SenderKeyStateStructure_SenderChainKey {
-	seed := make([]byte, len(c.chainKey))
-	copy(seed, c.chainKey)
-
-	return &v1.SenderKeyStateStructure_SenderChainKey{
-		Iteration: c.iteration,
-		Seed:      seed,
-	}
 }

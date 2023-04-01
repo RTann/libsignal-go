@@ -23,11 +23,17 @@ func NewGroupState(
 		private = signaturePrivateKey.Bytes()
 	}
 
+	seed := make([]byte, len(chainKey))
+	copy(seed, chainKey)
+
 	return &GroupState{
 		state: &v1.SenderKeyStateStructure{
 			MessageVersion: uint32(messageVersion),
 			ChainId:        chainID,
-			SenderChainKey: senderkey.NewChainKey(chainKey, iteration).Proto(),
+			SenderChainKey: &v1.SenderKeyStateStructure_SenderChainKey{
+				Iteration: iteration,
+				Seed:      seed,
+			},
 			SenderSigningKey: &v1.SenderKeyStateStructure_SenderSigningKey{
 				Public:  signatureKey.Bytes(),
 				Private: private,
