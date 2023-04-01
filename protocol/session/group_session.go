@@ -36,14 +36,13 @@ func (g *GroupSession) ProcessSenderKeyDistribution(ctx context.Context, message
 		record = NewGroupRecord()
 	}
 
-	state := NewGroupState(
-		message.Version(),
-		message.ChainID(),
-		message.Iteration(),
-		message.ChainKey(),
-		message.SigningKey(),
-		nil,
-	)
+	state := NewGroupState(GroupStateConfig{
+		MessageVersion: message.Version(),
+		ChainID:        message.ChainID(),
+		Iteration:      message.Iteration(),
+		ChainKey:       message.ChainKey(),
+		SignatureKey:   message.SigningKey(),
+	})
 	err = record.AddState(state)
 	if err != nil {
 		return err
@@ -79,14 +78,14 @@ func (g *GroupSession) NewSenderKeyDistribution(ctx context.Context, random io.R
 		}
 
 		record = NewGroupRecord()
-		state := NewGroupState(
-			message.SenderKeyVersion,
-			chainID,
-			0,
-			senderKey,
-			signingKey.PublicKey(),
-			signingKey.PrivateKey(),
-		)
+		state := NewGroupState(GroupStateConfig{
+			MessageVersion:      message.SenderKeyVersion,
+			ChainID:             chainID,
+			Iteration:           0,
+			ChainKey:            senderKey,
+			SignatureKey:        signingKey.PublicKey(),
+			SignaturePrivateKey: signingKey.PrivateKey(),
+		})
 		err = record.AddState(state)
 		if err != nil {
 			return nil, err

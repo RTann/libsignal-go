@@ -10,32 +10,34 @@ type GroupState struct {
 	state *v1.SenderKeyStateStructure
 }
 
-func NewGroupState(
-	messageVersion uint8,
-	chainID,
-	iteration uint32,
-	chainKey []byte,
-	signatureKey curve.PublicKey,
-	signaturePrivateKey curve.PrivateKey,
-) *GroupState {
+type GroupStateConfig struct {
+	MessageVersion      uint8
+	ChainID             uint32
+	Iteration           uint32
+	ChainKey            []byte
+	SignatureKey        curve.PublicKey
+	SignaturePrivateKey curve.PrivateKey
+}
+
+func NewGroupState(cfg GroupStateConfig) *GroupState {
 	var private []byte
-	if signaturePrivateKey != nil {
-		private = signaturePrivateKey.Bytes()
+	if cfg.SignaturePrivateKey != nil {
+		private = cfg.SignaturePrivateKey.Bytes()
 	}
 
-	seed := make([]byte, len(chainKey))
-	copy(seed, chainKey)
+	seed := make([]byte, len(cfg.ChainKey))
+	copy(seed, cfg.ChainKey)
 
 	return &GroupState{
 		state: &v1.SenderKeyStateStructure{
-			MessageVersion: uint32(messageVersion),
-			ChainId:        chainID,
+			MessageVersion: uint32(cfg.MessageVersion),
+			ChainId:        cfg.ChainID,
 			SenderChainKey: &v1.SenderKeyStateStructure_SenderChainKey{
-				Iteration: iteration,
+				Iteration: cfg.Iteration,
 				Seed:      seed,
 			},
 			SenderSigningKey: &v1.SenderKeyStateStructure_SenderSigningKey{
-				Public:  signatureKey.Bytes(),
+				Public:  cfg.SignatureKey.Bytes(),
 				Private: private,
 			},
 		},
