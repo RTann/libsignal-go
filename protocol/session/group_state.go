@@ -69,10 +69,10 @@ func (s *GroupState) PublicSigningKey() (curve.PublicKey, error) {
 	return curve.NewPublicKey(s.state.GetSenderSigningKey().GetPublic())
 }
 
-func (s *GroupState) AddMessageKeys(keys senderkey.MessageKeys) {
+func (s *GroupState) AddMessageKey(key senderkey.MessageKey) {
 	msgKeys := &v1.SenderKeyStateStructure_SenderMessageKey{
-		Iteration: keys.Iteration(),
-		Seed:      keys.Seed(),
+		Iteration: key.Iteration(),
+		Seed:      key.Seed(),
 	}
 	s.state.SenderMessageKeys = append(s.state.GetSenderMessageKeys(), msgKeys)
 	if len(s.state.GetSenderMessageKeys()) > maxMessageKeys {
@@ -81,24 +81,24 @@ func (s *GroupState) AddMessageKeys(keys senderkey.MessageKeys) {
 	}
 }
 
-func (s *GroupState) RemoveMessageKeys(iteration uint32) (senderkey.MessageKeys, bool, error) {
-	var messageKeys *v1.SenderKeyStateStructure_SenderMessageKey
+func (s *GroupState) RemoveMessageKeys(iteration uint32) (senderkey.MessageKey, bool, error) {
+	var messageKey *v1.SenderKeyStateStructure_SenderMessageKey
 	idx := -1
 	for i, key := range s.state.GetSenderMessageKeys() {
 		if key.GetIteration() == iteration {
-			messageKeys = key
+			messageKey = key
 			idx = i
 			break
 		}
 	}
 
 	if idx < 0 {
-		return senderkey.MessageKeys{}, false, nil
+		return senderkey.MessageKey{}, false, nil
 	}
 
-	derived, err := senderkey.DeriveMessageKeys(messageKeys.GetSeed(), messageKeys.GetIteration())
+	derived, err := senderkey.DeriveMessageKey(messageKey.GetSeed(), messageKey.GetIteration())
 	if err != nil {
-		return senderkey.MessageKeys{}, false, err
+		return senderkey.MessageKey{}, false, err
 	}
 
 	s.state.GetSenderMessageKeys()[idx] = nil

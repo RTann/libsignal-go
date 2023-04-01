@@ -23,23 +23,23 @@ var (
 	chainKeySeed   = []byte{0x02}
 )
 
-type MessageKeys struct {
+type MessageKey struct {
 	cipherKey []byte
 	iv        []byte
 	seed      []byte
 	iteration uint32
 }
 
-func DeriveMessageKeys(seed []byte, iteration uint32) (MessageKeys, error) {
+func DeriveMessageKey(seed []byte, iteration uint32) (MessageKey, error) {
 	// 16 + 32 = 48
 	derived := make([]byte, 48)
 	kdf := hkdf.New(sha256.New, seed, nil, []byte(info))
 	_, err := io.ReadFull(kdf, derived)
 	if err != nil {
-		return MessageKeys{}, err
+		return MessageKey{}, err
 	}
 
-	return MessageKeys{
+	return MessageKey{
 		cipherKey: derived[16:],
 		iv:        derived[:16],
 		seed:      seed,
@@ -47,19 +47,19 @@ func DeriveMessageKeys(seed []byte, iteration uint32) (MessageKeys, error) {
 	}, nil
 }
 
-func (m MessageKeys) CipherKey() []byte {
+func (m MessageKey) CipherKey() []byte {
 	return m.cipherKey
 }
 
-func (m MessageKeys) IV() []byte {
+func (m MessageKey) IV() []byte {
 	return m.iv
 }
 
-func (m MessageKeys) Seed() []byte {
+func (m MessageKey) Seed() []byte {
 	return m.seed
 }
 
-func (m MessageKeys) Iteration() uint32 {
+func (m MessageKey) Iteration() uint32 {
 	return m.iteration
 }
 
@@ -90,8 +90,8 @@ func (c ChainKey) Next() ChainKey {
 	}
 }
 
-func (c ChainKey) MessageKeys() (MessageKeys, error) {
-	return DeriveMessageKeys(hash(c.chainKey, messageKeySeed), c.iteration)
+func (c ChainKey) MessageKey() (MessageKey, error) {
+	return DeriveMessageKey(hash(c.chainKey, messageKeySeed), c.iteration)
 }
 
 func hash(key, seed []byte) []byte {

@@ -30,12 +30,12 @@ func (g *GroupSession) EncryptMessage(ctx context.Context, random io.Reader, pla
 	}
 
 	senderChainKey := state.SenderChainKey()
-	messageKeys, err := senderChainKey.MessageKeys()
+	messageKey, err := senderChainKey.MessageKey()
 	if err != nil {
 		return nil, err
 	}
 
-	ciphertext, err := crypto.AESCBCEncrypt(messageKeys.CipherKey(), messageKeys.IV(), plaintext)
+	ciphertext, err := crypto.AESCBCEncrypt(messageKey.CipherKey(), messageKey.IV(), plaintext)
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +49,7 @@ func (g *GroupSession) EncryptMessage(ctx context.Context, random io.Reader, pla
 		Version:      uint8(state.Version()),
 		DistID:       g.LocalDistID,
 		ChainID:      state.ChainID(),
-		Iteration:    messageKeys.Iteration(),
+		Iteration:    messageKey.Iteration(),
 		Ciphertext:   ciphertext,
 		SignatureKey: signingKey,
 	})
@@ -102,12 +102,12 @@ func (g *GroupSession) DecryptMessage(ctx context.Context, ciphertext *message.S
 		return nil, errors.New("signature verification failed")
 	}
 
-	messageKeys, err := g.messageKeys(state, ciphertext.Iteration(), ciphertext.DistributionID())
+	messageKey, err := g.messageKey(state, ciphertext.Iteration(), ciphertext.DistributionID())
 	if err != nil {
 		return nil, err
 	}
 
-	plaintext, err := crypto.AESCBCDecrypt(messageKeys.CipherKey(), messageKeys.IV(), ciphertext.Message())
+	plaintext, err := crypto.AESCBCDecrypt(messageKey.CipherKey(), messageKey.IV(), ciphertext.Message())
 	if err != nil {
 		return nil, err
 	}
@@ -120,18 +120,18 @@ func (g *GroupSession) DecryptMessage(ctx context.Context, ciphertext *message.S
 	return plaintext, nil
 }
 
-func (g *GroupSession) messageKeys(state *GroupState, iteration uint32, distributionID distribution.ID) (senderkey.MessageKeys, error) {
+func (g *GroupSession) messageKey(state *GroupState, iteration uint32, distributionID distribution.ID) (senderkey.MessageKey, error) {
 	chainKey := state.SenderChainKey()
 	currentIteration := chainKey.Iteration()
 
 	if currentIteration > iteration {
 		keys, ok, err := state.RemoveMessageKeys(iteration)
 		if err != nil {
-			return senderkey.MessageKeys{}, err
+			return senderkey.MessageKey{}, err
 		}
 		if !ok {
 			glog.Warningf("SenderKey distribution %s Duplicate message for iteration: %d", distributionID, iteration)
-			return senderkey.MessageKeys{}, perrors.ErrDuplicateMessage
+			return senderkey.MessageKey{}, perrors.ErrDuplicateMessage
 		}
 
 		return keys, nil
@@ -140,23 +140,23 @@ func (g *GroupSession) messageKeys(state *GroupState, iteration uint32, distribu
 	jump := iteration - currentIteration
 	if jump > MaxJumps {
 		glog.Errorf("Sender distribution %s Exceeded future message limit: %d, iteration: %d", distributionID, MaxJumps, iteration)
-		return senderkey.MessageKeys{}, errors.New("message from too far in the future")
+		return senderkey.MessageKey{}, errors.New("message from too far in the future")
 	}
 
 	for chainKey.Iteration() < iteration {
-		keys, err := chainKey.MessageKeys()
+		keys, err := chainKey.MessageKey()
 		if err != nil {
-			return senderkey.MessageKeys{}, err
+			return senderkey.MessageKey{}, err
 		}
-		state.AddMessageKeys(keys)
+		state.AddMessageKey(keys)
 		chainKey = chainKey.Next()
 	}
 
 	state.SetSenderChainKey(chainKey.Next())
 
-	messageKeys, err := chainKey.MessageKeys()
+	messageKeys, err := chainKey.MessageKey()
 	if err != nil {
-		return senderkey.MessageKeys{}, err
+		return senderkey.MessageKey{}, err
 	}
 
 	return messageKeys, nil
