@@ -17,7 +17,7 @@ type GroupSession struct {
 	// SenderAddress is the address of the user sending the message.
 	//
 	// It is meant to be populated by both the sender and the receiver.
-	SenderAddress  address.Address
+	SenderAddress address.Address
 	// LocalDistID is the distribution ID of the sender.
 	//
 	// It is meant to be populated by the sender, only.
