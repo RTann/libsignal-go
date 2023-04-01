@@ -96,7 +96,7 @@ func (s *SenderKey) Message() []byte {
 }
 
 func (s *SenderKey) VerifySignature(signatureKey curve.PublicKey) (bool, error) {
-	idx := len(s.serialized) - 64
+	idx := len(s.serialized) - curve.SignatureSize
 	return signatureKey.VerifySignature(s.serialized[idx:], s.serialized[:idx])
 }
 
