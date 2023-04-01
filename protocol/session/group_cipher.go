@@ -16,7 +16,7 @@ import (
 )
 
 func (g *GroupSession) EncryptMessage(ctx context.Context, random io.Reader, plaintext []byte) (*message.SenderKey, error) {
-	record, exists, err := g.SenderKeyStore.Load(ctx, g.Sender, g.LocalDistID)
+	record, exists, err := g.SenderKeyStore.Load(ctx, g.SenderAddress, g.LocalDistID)
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +59,7 @@ func (g *GroupSession) EncryptMessage(ctx context.Context, random io.Reader, pla
 
 	state.SetSenderChainKey(senderChainKey.Next())
 
-	err = g.SenderKeyStore.Store(ctx, g.Sender, g.LocalDistID, record)
+	err = g.SenderKeyStore.Store(ctx, g.SenderAddress, g.LocalDistID, record)
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +71,7 @@ func (g *GroupSession) DecryptMessage(ctx context.Context, ciphertext *message.S
 	distributionID := ciphertext.DistributionID()
 	chainID := ciphertext.ChainID()
 
-	record, exists, err := g.SenderKeyStore.Load(ctx, g.Sender, distributionID)
+	record, exists, err := g.SenderKeyStore.Load(ctx, g.SenderAddress, distributionID)
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +112,7 @@ func (g *GroupSession) DecryptMessage(ctx context.Context, ciphertext *message.S
 		return nil, err
 	}
 
-	err = g.SenderKeyStore.Store(ctx, g.Sender, g.LocalDistID, record)
+	err = g.SenderKeyStore.Store(ctx, g.SenderAddress, ciphertext.DistributionID(), record)
 	if err != nil {
 		return nil, err
 	}

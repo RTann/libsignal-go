@@ -29,7 +29,7 @@ func TestGroupNoSendSession(t *testing.T) {
 	aliceStore := testInMemProtocolStore(t, random)
 
 	aliceSession := &session.GroupSession{
-		Sender:         senderAddress,
+		SenderAddress:  senderAddress,
 		LocalDistID:    distributionID,
 		SenderKeyStore: aliceStore.GroupStore(),
 	}
@@ -48,18 +48,18 @@ func TestGroupNoRecvSession(t *testing.T) {
 	bobStore := testInMemProtocolStore(t, random)
 
 	aliceSession := session.GroupSession{
-		Sender:         senderAddress,
+		SenderAddress:  senderAddress,
 		LocalDistID:    distributionID,
 		SenderKeyStore: aliceStore.GroupStore(),
 	}
-	_, err := aliceSession.NewSenderKeyDistributionMessage(ctx, random)
+	_, err := aliceSession.NewSenderKeyDistribution(ctx, random)
 	assert.NoError(t, err)
 
 	aliceCiphertext, err := aliceSession.EncryptMessage(ctx, random, []byte("space camp?"))
 	assert.NoError(t, err)
 
 	bobSession := &session.GroupSession{
-		Sender:         senderAddress,
+		SenderAddress:  senderAddress,
 		SenderKeyStore: bobStore.GroupStore(),
 	}
 	_, err = bobSession.DecryptMessage(ctx, aliceCiphertext)
@@ -77,11 +77,11 @@ func TestGroupBasic(t *testing.T) {
 	bobStore := testInMemProtocolStore(t, random)
 
 	aliceSession := session.GroupSession{
-		Sender:         senderAddress,
+		SenderAddress:  senderAddress,
 		LocalDistID:    distributionID,
 		SenderKeyStore: aliceStore.GroupStore(),
 	}
-	sentDistributionMsg, err := aliceSession.NewSenderKeyDistributionMessage(ctx, random)
+	sentDistributionMsg, err := aliceSession.NewSenderKeyDistribution(ctx, random)
 	assert.NoError(t, err)
 
 	recvDistributionMsg, err := message.NewSenderKeyDistributionFromBytes(sentDistributionMsg.Bytes())
@@ -92,10 +92,10 @@ func TestGroupBasic(t *testing.T) {
 	assert.NoError(t, err)
 
 	bobSession := &session.GroupSession{
-		Sender:         senderAddress,
+		SenderAddress:  senderAddress,
 		SenderKeyStore: bobStore.GroupStore(),
 	}
-	err = bobSession.ProcessDistributionMessage(ctx, recvDistributionMsg)
+	err = bobSession.ProcessSenderKeyDistribution(ctx, recvDistributionMsg)
 	assert.NoError(t, err)
 
 	bobPlaintext, err := bobSession.DecryptMessage(ctx, aliceCiphertext)
@@ -115,11 +115,11 @@ func TestGroupLargeMessages(t *testing.T) {
 	bobStore := testInMemProtocolStore(t, random)
 
 	aliceSession := session.GroupSession{
-		Sender:         senderAddress,
+		SenderAddress:  senderAddress,
 		LocalDistID:    distributionID,
 		SenderKeyStore: aliceStore.GroupStore(),
 	}
-	sentDistributionMsg, err := aliceSession.NewSenderKeyDistributionMessage(ctx, random)
+	sentDistributionMsg, err := aliceSession.NewSenderKeyDistribution(ctx, random)
 	assert.NoError(t, err)
 
 	recvDistributionMsg, err := message.NewSenderKeyDistributionFromBytes(sentDistributionMsg.Bytes())
@@ -133,10 +133,10 @@ func TestGroupLargeMessages(t *testing.T) {
 	assert.NoError(t, err)
 
 	bobSession := &session.GroupSession{
-		Sender:         senderAddress,
+		SenderAddress:  senderAddress,
 		SenderKeyStore: bobStore.GroupStore(),
 	}
-	err = bobSession.ProcessDistributionMessage(ctx, recvDistributionMsg)
+	err = bobSession.ProcessSenderKeyDistribution(ctx, recvDistributionMsg)
 	assert.NoError(t, err)
 
 	bobPlaintext, err := bobSession.DecryptMessage(ctx, aliceCiphertext)
@@ -155,21 +155,21 @@ func TestGroupBasicRatchet(t *testing.T) {
 	bobStore := testInMemProtocolStore(t, random)
 
 	aliceSession := session.GroupSession{
-		Sender:         senderAddress,
+		SenderAddress:  senderAddress,
 		LocalDistID:    distributionID,
 		SenderKeyStore: aliceStore.GroupStore(),
 	}
-	sentDistributionMsg, err := aliceSession.NewSenderKeyDistributionMessage(ctx, random)
+	sentDistributionMsg, err := aliceSession.NewSenderKeyDistribution(ctx, random)
 	assert.NoError(t, err)
 
 	recvDistributionMsg, err := message.NewSenderKeyDistributionFromBytes(sentDistributionMsg.Bytes())
 	assert.NoError(t, err)
 
 	bobSession := &session.GroupSession{
-		Sender:         senderAddress,
+		SenderAddress:  senderAddress,
 		SenderKeyStore: bobStore.GroupStore(),
 	}
-	err = bobSession.ProcessDistributionMessage(ctx, recvDistributionMsg)
+	err = bobSession.ProcessSenderKeyDistribution(ctx, recvDistributionMsg)
 	assert.NoError(t, err)
 
 	aliceCiphertext1, err := aliceSession.EncryptMessage(ctx, random, []byte("swim camp"))
@@ -210,11 +210,11 @@ func TestGroupLateJoin(t *testing.T) {
 	bobStore := testInMemProtocolStore(t, random)
 
 	aliceSession := session.GroupSession{
-		Sender:         senderAddress,
+		SenderAddress:  senderAddress,
 		LocalDistID:    distributionID,
 		SenderKeyStore: aliceStore.GroupStore(),
 	}
-	sentDistributionMsg, err := aliceSession.NewSenderKeyDistributionMessage(ctx, random)
+	sentDistributionMsg, err := aliceSession.NewSenderKeyDistribution(ctx, random)
 	assert.NoError(t, err)
 
 	recvDistributionMsg, err := message.NewSenderKeyDistributionFromBytes(sentDistributionMsg.Bytes())
@@ -227,10 +227,10 @@ func TestGroupLateJoin(t *testing.T) {
 	}
 
 	bobSession := &session.GroupSession{
-		Sender:         senderAddress,
+		SenderAddress:  senderAddress,
 		SenderKeyStore: bobStore.GroupStore(),
 	}
-	err = bobSession.ProcessDistributionMessage(ctx, recvDistributionMsg)
+	err = bobSession.ProcessSenderKeyDistribution(ctx, recvDistributionMsg)
 	assert.NoError(t, err)
 
 	msg := []byte("welcome bob")
@@ -254,21 +254,21 @@ func TestGroupOutOfOrder(t *testing.T) {
 	bobStore := testInMemProtocolStore(t, random)
 
 	aliceSession := session.GroupSession{
-		Sender:         senderAddress,
+		SenderAddress:  senderAddress,
 		LocalDistID:    distributionID,
 		SenderKeyStore: aliceStore.GroupStore(),
 	}
-	sentDistributionMsg, err := aliceSession.NewSenderKeyDistributionMessage(ctx, random)
+	sentDistributionMsg, err := aliceSession.NewSenderKeyDistribution(ctx, random)
 	assert.NoError(t, err)
 
 	recvDistributionMsg, err := message.NewSenderKeyDistributionFromBytes(sentDistributionMsg.Bytes())
 	assert.NoError(t, err)
 
 	bobSession := &session.GroupSession{
-		Sender:         senderAddress,
+		SenderAddress:  senderAddress,
 		SenderKeyStore: bobStore.GroupStore(),
 	}
-	err = bobSession.ProcessDistributionMessage(ctx, recvDistributionMsg)
+	err = bobSession.ProcessSenderKeyDistribution(ctx, recvDistributionMsg)
 	assert.NoError(t, err)
 
 	ciphertexts := make([]*message.SenderKey, 0, 100)
@@ -310,21 +310,21 @@ func TestGroupTooFarInFuture(t *testing.T) {
 	bobStore := testInMemProtocolStore(t, random)
 
 	aliceSession := session.GroupSession{
-		Sender:         senderAddress,
+		SenderAddress:  senderAddress,
 		LocalDistID:    distributionID,
 		SenderKeyStore: aliceStore.GroupStore(),
 	}
-	sentDistributionMsg, err := aliceSession.NewSenderKeyDistributionMessage(ctx, random)
+	sentDistributionMsg, err := aliceSession.NewSenderKeyDistribution(ctx, random)
 	assert.NoError(t, err)
 
 	recvDistributionMsg, err := message.NewSenderKeyDistributionFromBytes(sentDistributionMsg.Bytes())
 	assert.NoError(t, err)
 
 	bobSession := &session.GroupSession{
-		Sender:         senderAddress,
+		SenderAddress:  senderAddress,
 		SenderKeyStore: bobStore.GroupStore(),
 	}
-	err = bobSession.ProcessDistributionMessage(ctx, recvDistributionMsg)
+	err = bobSession.ProcessSenderKeyDistribution(ctx, recvDistributionMsg)
 	assert.NoError(t, err)
 
 	for i := 0; i < session.MaxJumps+1; i++ {
@@ -350,21 +350,21 @@ func TestGroupMessageKeyLimit(t *testing.T) {
 	bobStore := testInMemProtocolStore(t, random)
 
 	aliceSession := session.GroupSession{
-		Sender:         senderAddress,
+		SenderAddress:  senderAddress,
 		LocalDistID:    distributionID,
 		SenderKeyStore: aliceStore.GroupStore(),
 	}
-	sentDistributionMsg, err := aliceSession.NewSenderKeyDistributionMessage(ctx, random)
+	sentDistributionMsg, err := aliceSession.NewSenderKeyDistribution(ctx, random)
 	assert.NoError(t, err)
 
 	recvDistributionMsg, err := message.NewSenderKeyDistributionFromBytes(sentDistributionMsg.Bytes())
 	assert.NoError(t, err)
 
 	bobSession := &session.GroupSession{
-		Sender:         senderAddress,
+		SenderAddress:  senderAddress,
 		SenderKeyStore: bobStore.GroupStore(),
 	}
-	err = bobSession.ProcessDistributionMessage(ctx, recvDistributionMsg)
+	err = bobSession.ProcessSenderKeyDistribution(ctx, recvDistributionMsg)
 	assert.NoError(t, err)
 
 	ciphertexts := make([]*message.SenderKey, 0, 2010)

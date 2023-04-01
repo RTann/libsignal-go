@@ -14,15 +14,21 @@ import (
 )
 
 type GroupSession struct {
-	Sender         address.Address
+	// SenderAddress is the address of the user sending the message.
+	//
+	// It is meant to be populated by both the sender and the receiver.
+	SenderAddress  address.Address
+	// LocalDistID is the distribution ID of the sender.
+	//
+	// It is meant to be populated by the sender, only.
 	LocalDistID    distribution.ID
 	SenderKeyStore GroupStore
 }
 
-func (g *GroupSession) ProcessDistributionMessage(ctx context.Context, message *message.SenderKeyDistribution) error {
-	glog.Infof("%s Processing SenderKey distribution %s with chain ID %s", g.Sender, message.DistributionID(), message.ChainID())
+func (g *GroupSession) ProcessSenderKeyDistribution(ctx context.Context, message *message.SenderKeyDistribution) error {
+	glog.Infof("%s Processing SenderKey distribution %s with chain ID %s", g.SenderAddress, message.DistributionID(), message.ChainID())
 
-	record, exists, err := g.SenderKeyStore.Load(ctx, g.Sender, message.DistributionID())
+	record, exists, err := g.SenderKeyStore.Load(ctx, g.SenderAddress, message.DistributionID())
 	if err != nil {
 		return err
 	}
@@ -38,14 +44,17 @@ func (g *GroupSession) ProcessDistributionMessage(ctx context.Context, message *
 		message.SigningKey(),
 		nil,
 	)
-	record.AddState(state)
+	err = record.AddState(state)
+	if err != nil {
+		return err
+	}
 
-	err = g.SenderKeyStore.Store(ctx, g.Sender, message.DistributionID(), record)
+	err = g.SenderKeyStore.Store(ctx, g.SenderAddress, message.DistributionID(), record)
 	return err
 }
 
-func (g *GroupSession) NewSenderKeyDistributionMessage(ctx context.Context, random io.Reader) (*message.SenderKeyDistribution, error) {
-	record, exists, err := g.SenderKeyStore.Load(ctx, g.Sender, g.LocalDistID)
+func (g *GroupSession) NewSenderKeyDistribution(ctx context.Context, random io.Reader) (*message.SenderKeyDistribution, error) {
+	record, exists, err := g.SenderKeyStore.Load(ctx, g.SenderAddress, g.LocalDistID)
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +92,7 @@ func (g *GroupSession) NewSenderKeyDistributionMessage(ctx context.Context, rand
 			return nil, err
 		}
 
-		err = g.SenderKeyStore.Store(ctx, g.Sender, g.LocalDistID, record)
+		err = g.SenderKeyStore.Store(ctx, g.SenderAddress, g.LocalDistID, record)
 		if err != nil {
 			return nil, err
 		}
