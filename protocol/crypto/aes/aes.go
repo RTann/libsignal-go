@@ -1,12 +1,18 @@
-// Package aes implements AES functions used by the protocol.
+// Package aes implements AES-based encryption functions used by the protocol.
 package aes
 
 import (
 	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/hmac"
+	"crypto/sha256"
 	"errors"
 )
+
+const macSize = 10
+
+var zeroNonce = []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 
 // CBCEncrypt encrypts a plaintext message via
 // AES encryption in cipher block chaining mode.
@@ -79,4 +85,52 @@ func pkcs7unpad(plaintext []byte) ([]byte, error) {
 	}
 
 	return plaintext[:length-n], nil
+}
+
+// CTR encrypts/decrypts the given message via
+// AES in counter mode.
+func CTR(key, message []byte) ([]byte, error) {
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return nil, err
+	}
+
+	stream := cipher.NewCTR(block, zeroNonce)
+
+	ret := make([]byte, len(message))
+	stream.XORKeyStream(ret, message)
+
+	return ret, nil
+}
+
+func CTRHMACSHA256Encrypt(cipherKey, macKey, plaintext []byte) ([]byte, error) {
+	ciphertext, err := CTR(cipherKey, plaintext)
+	if err != nil {
+		return nil, err
+	}
+
+	mac := hmacSHA256(macKey, ciphertext)
+
+	return append(ciphertext, mac[:macSize]...), nil
+}
+
+func CTRHMACSHA256Decrypt(cipherKey, macKey, ciphertext []byte) ([]byte, error) {
+	if len(ciphertext) < macSize {
+		return nil, errors.New("ciphertext too short")
+	}
+
+	plaintextLen := len(ciphertext)-macSize
+	ourMac := hmacSHA256(macKey, ciphertext[:plaintextLen])
+	if !hmac.Equal(ourMac[:macSize], ciphertext[plaintextLen:]) {
+		return nil, errors.New("MAC verification failed")
+	}
+
+	return CTR(cipherKey, ciphertext[:plaintextLen])
+}
+
+func hmacSHA256(macKey, message []byte) []byte {
+	m := make([]byte, 0, sha256.Size)
+	mac := hmac.New(sha256.New, macKey)
+	mac.Write(message)
+	return mac.Sum(m)
 }

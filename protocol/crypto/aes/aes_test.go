@@ -174,3 +174,13 @@ func TestCBC(t *testing.T) {
 	assert.Equal(t, "b0736294a124482a4159", hex.EncodeToString(recovered))
 	assert.NotEqual(t, hex.EncodeToString(plaintext), hex.EncodeToString(recovered))
 }
+
+func TestCTR(t *testing.T) {
+	key, err := hex.DecodeString("603DEB1015CA71BE2B73AEF0857D77811F352C073B6108D72D9810A30914DFF4")
+	require.NoError(t, err)
+	plaintext := make([]byte, 35)
+
+	ciphertext, err := CTR(key, plaintext)
+	assert.NoError(t, err)
+	assert.Equal(t, "e568f68194cf76d6174d4cc04310a85491151e5d0b7a1f1bc0d7acd0ae3e51e4170e23", hex.EncodeToString(ciphertext))
+}
