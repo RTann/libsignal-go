@@ -2,6 +2,7 @@ package session
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/binary"
 	"io"
 
@@ -58,12 +59,10 @@ func (g *GroupSession) NewSenderKeyDistribution(ctx context.Context, random io.R
 		return nil, err
 	}
 	if !exists {
-		chainIDBytes := make([]byte, 4)
-		_, err := io.ReadFull(random, chainIDBytes)
+		chainID, err := randomUint32()
 		if err != nil {
 			return nil, err
 		}
-		chainID := binary.BigEndian.Uint32(chainIDBytes)
 		glog.Infof("Creating SenderKey for distribution %s with chain ID %d", g.LocalDistID, chainID)
 
 		senderKey := make([]byte, 32)
@@ -117,4 +116,14 @@ func (g *GroupSession) NewSenderKeyDistribution(ctx context.Context, random io.R
 		ChainKey:   senderChainKey.Seed(),
 		SigningKey: signingKey,
 	})
+}
+
+func randomUint32() (uint32, error) {
+	bytes := make([]byte, 4)
+	_, err := io.ReadFull(rand.Reader, bytes)
+	if err != nil {
+		return 0, err
+	}
+
+	return binary.LittleEndian.Uint32(bytes), nil
 }
