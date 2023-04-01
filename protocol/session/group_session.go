@@ -50,7 +50,7 @@ func (g *GroupSession) NewSenderKeyDistributionMessage(ctx context.Context, rand
 		return nil, err
 	}
 	if !exists {
-		chainIDBytes := make([]byte, 32)
+		chainIDBytes := make([]byte, 4)
 		_, err := io.ReadFull(random, chainIDBytes)
 		if err != nil {
 			return nil, err
