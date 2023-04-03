@@ -8,7 +8,7 @@ import (
 
 	"github.com/golang/glog"
 
-	"github.com/RTann/libsignal-go/protocol/crypto"
+	"github.com/RTann/libsignal-go/protocol/crypto/aes"
 	"github.com/RTann/libsignal-go/protocol/distribution"
 	"github.com/RTann/libsignal-go/protocol/message"
 	"github.com/RTann/libsignal-go/protocol/perrors"
@@ -35,7 +35,7 @@ func (g *GroupSession) EncryptMessage(ctx context.Context, random io.Reader, pla
 		return nil, err
 	}
 
-	ciphertext, err := crypto.AESCBCEncrypt(messageKey.CipherKey(), messageKey.IV(), plaintext)
+	ciphertext, err := aes.CBCEncrypt(messageKey.CipherKey(), messageKey.IV(), plaintext)
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +107,7 @@ func (g *GroupSession) DecryptMessage(ctx context.Context, ciphertext *message.S
 		return nil, err
 	}
 
-	plaintext, err := crypto.AESCBCDecrypt(messageKey.CipherKey(), messageKey.IV(), ciphertext.Message())
+	plaintext, err := aes.CBCDecrypt(messageKey.CipherKey(), messageKey.IV(), ciphertext.Message())
 	if err != nil {
 		return nil, err
 	}
