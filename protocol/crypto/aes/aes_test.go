@@ -1,10 +1,11 @@
-package crypto
+package aes
 
 import (
-	"crypto/aes"
+	"encoding/hex"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestPKCS7Pad(t *testing.T) {
@@ -135,8 +136,41 @@ func TestPKCS7Pad(t *testing.T) {
 	for _, testcase := range testcases {
 		t.Run(testcase.plaintext, func(t *testing.T) {
 			padded := append([]byte(testcase.plaintext), testcase.padding...)
-			assert.Equal(t, padded, pkcs7pad([]byte(testcase.plaintext), aes.BlockSize))
-			assert.Equal(t, testcase.plaintext, string(pkcs7unpad(padded)))
+			assert.Equal(t, padded, pkcs7pad([]byte(testcase.plaintext)))
+			unpadded, err := pkcs7unpad(padded)
+			assert.NoError(t, err)
+			assert.Equal(t, testcase.plaintext, string(unpadded))
 		})
 	}
+}
+
+func TestCBC(t *testing.T) {
+	key, err := hex.DecodeString("4e22eb16d964779994222e82192ce9f747da72dc4abe49dfdeeb71d0ffe3796e")
+	require.NoError(t, err)
+	iv, err := hex.DecodeString("6f8a557ddc0a140c878063a6d5f31d3d")
+	require.NoError(t, err)
+	plaintext, err := hex.DecodeString("30736294a124482a4159")
+	require.NoError(t, err)
+
+	ciphertext, err := CBCEncrypt(key, iv, plaintext)
+	assert.NoError(t, err)
+	assert.Equal(t, "dd3f573ab4508b9ed0e45e0baf5608f3", hex.EncodeToString(ciphertext))
+
+	recovered, err := CBCDecrypt(key, iv, ciphertext)
+	assert.NoError(t, err)
+	assert.Equal(t, hex.EncodeToString(plaintext), hex.EncodeToString(recovered))
+
+	// Invalid padding
+	_, err = CBCDecrypt(key, iv, recovered)
+	assert.Error(t, err)
+	_, err = CBCDecrypt(key, ciphertext, ciphertext)
+	assert.Error(t, err)
+
+	badIV, err := hex.DecodeString("ef8a557ddc0a140c878063a6d5f31d3d")
+	require.NoError(t, err)
+
+	recovered, err = CBCDecrypt(key, badIV, ciphertext)
+	assert.NoError(t, err)
+	assert.Equal(t, "b0736294a124482a4159", hex.EncodeToString(recovered))
+	assert.NotEqual(t, hex.EncodeToString(plaintext), hex.EncodeToString(recovered))
 }
