@@ -9,7 +9,7 @@ import (
 
 	"github.com/golang/glog"
 
-	"github.com/RTann/libsignal-go/protocol/crypto"
+	"github.com/RTann/libsignal-go/protocol/crypto/aes"
 	"github.com/RTann/libsignal-go/protocol/curve"
 	"github.com/RTann/libsignal-go/protocol/direction"
 	"github.com/RTann/libsignal-go/protocol/message"
@@ -62,7 +62,7 @@ func (s *Session) EncryptMessage(ctx context.Context, plaintext []byte) (message
 		return nil, fmt.Errorf("no remote identity key for %s", s.RemoteAddress)
 	}
 
-	ciphertext, err := crypto.AESCBCEncrypt(messageKeys.CipherKey(), messageKeys.IV(), plaintext)
+	ciphertext, err := aes.CBCEncrypt(messageKeys.CipherKey(), messageKeys.IV(), plaintext)
 	if err != nil {
 		return nil, err
 	}
@@ -312,7 +312,7 @@ func (s *Session) decryptMessageSession(random io.Reader, state *State, cipherte
 		return nil, errors.New("MAC verification failed")
 	}
 
-	plaintext, err := crypto.AESCBCDecrypt(messageKeys.CipherKey(), messageKeys.IV(), ciphertext.Message())
+	plaintext, err := aes.CBCDecrypt(messageKeys.CipherKey(), messageKeys.IV(), ciphertext.Message())
 	if err != nil {
 		return nil, err
 	}
