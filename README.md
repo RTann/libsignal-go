@@ -14,6 +14,4 @@ breaking changes should be expected.
 ## Roadmap
 
 * Add and refactor tests
-* Add group support to libsignal-protocol.
-* Add CI
 * Implement other APIs available in the source repository.
