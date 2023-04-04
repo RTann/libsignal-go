@@ -7,6 +7,11 @@ import (
 	"github.com/RTann/libsignal-go/protocol/perrors"
 )
 
+const (
+	PublicKeySize = curve25519.PublicKeySize
+	SignatureSize = curve25519.SignatureSize
+)
+
 // PublicKey represents an elliptic curve public key.
 type PublicKey interface {
 	keyType() KeyType
@@ -27,13 +32,17 @@ type PublicKey interface {
 //
 // The first byte of the given key is expected to identify the type of the key.
 func NewPublicKey(key []byte) (PublicKey, error) {
-	if len(key) != 1+curve25519.PublicKeySize {
-		return nil, perrors.ErrInvalidKeyLength(1+curve25519.PublicKeySize, len(key))
+	// Allow trailing data after the public key for some reason...
+	if len(key) < 1+PublicKeySize {
+		return nil, perrors.ErrInvalidKeyLength(1+PublicKeySize, len(key))
 	}
+
+	publicKey := make([]byte, PublicKeySize)
+	copy(publicKey, key[1:])
 
 	switch t := KeyType(key[0]); t {
 	case DJB:
-		return newDJBPublicKey(key[1:])
+		return newDJBPublicKey(publicKey)
 	default:
 		return nil, fmt.Errorf("unsupported key type: %v", t)
 	}

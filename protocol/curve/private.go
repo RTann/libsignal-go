@@ -7,6 +7,8 @@ import (
 	"github.com/RTann/libsignal-go/protocol/perrors"
 )
 
+const PrivateKeySize = curve25519.PrivateKeySize
+
 // PrivateKey represents an elliptic curve private key.
 type PrivateKey interface {
 	// Bytes returns an encoding of the private key.
@@ -22,8 +24,8 @@ type PrivateKey interface {
 
 // NewPrivateKey returns a PrivateKey based on the given key.
 func NewPrivateKey(key []byte) (PrivateKey, error) {
-	if len(key) != curve25519.PrivateKeySize {
-		return nil, perrors.ErrInvalidKeyLength(curve25519.PrivateKeySize, len(key))
+	if len(key) != PrivateKeySize {
+		return nil, perrors.ErrInvalidKeyLength(PrivateKeySize, len(key))
 	}
 
 	djbKey := make([]byte, len(key))
