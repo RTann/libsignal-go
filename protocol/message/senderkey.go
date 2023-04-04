@@ -47,7 +47,7 @@ func NewSenderKey(random io.Reader, cfg SenderKeyConfig) (*SenderKey, error) {
 
 	versionPrefix := ((cfg.Version & 0xF) << 4) | SenderKeyVersion
 
-	serialized := bytes.NewBuffer(make([]byte, 0, 1+len(message)+64))
+	serialized := bytes.NewBuffer(make([]byte, 0, 1+len(message)+curve.SignatureSize))
 	serialized.WriteByte(versionPrefix)
 	serialized.Write(message)
 
@@ -155,7 +155,7 @@ func NewSenderKeyDistributionFromBytes(bytes []byte) (*SenderKeyDistribution, er
 	}
 
 	messageVersion := bytes[0] >> 4
-	if messageVersion < SenderKeyVersion {
+	if messageVersion != SenderKeyVersion {
 		return nil, fmt.Errorf("unsupported message version: %d != %d", int(messageVersion), SenderKeyVersion)
 	}
 
