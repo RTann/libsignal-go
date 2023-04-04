@@ -99,10 +99,15 @@ func NewPreKeyFromBytes(bytes []byte) (Ciphertext, error) {
 		return nil, err
 	}
 
+	var preKeyID *prekey.ID
+	if message.PreKeyId != nil {
+		preKeyID = pointer.To(prekey.ID(message.GetPreKeyId()))
+	}
+
 	return &PreKey{
 		version:        version,
 		registrationID: message.GetRegistrationId(),
-		preKeyID:       pointer.To(prekey.ID(message.GetPreKeyId())),
+		preKeyID:       preKeyID,
 		signedPreKeyID: prekey.ID(message.GetSignedPreKeyId()),
 		baseKey:        baseKey,
 		identityKey:    identityKey,

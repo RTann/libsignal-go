@@ -15,8 +15,8 @@ type DJBPublicKey struct {
 }
 
 func newDJBPublicKey(key []byte) (*DJBPublicKey, error) {
-	if len(key) != curve25519.PublicKeySize {
-		return nil, perrors.ErrInvalidKeyLength(curve25519.PublicKeySize, len(key))
+	if len(key) != PublicKeySize {
+		return nil, perrors.ErrInvalidKeyLength(PublicKeySize, len(key))
 	}
 
 	return &DJBPublicKey{
@@ -29,14 +29,14 @@ func (d *DJBPublicKey) keyType() KeyType {
 }
 
 func (d *DJBPublicKey) Bytes() []byte {
-	bytes := make([]byte, 1+curve25519.PublicKeySize)
+	bytes := make([]byte, 1+PublicKeySize)
 	bytes[0] = byte(DJB)
 	copy(bytes[1:], d.key)
 	return bytes
 }
 
 func (d *DJBPublicKey) KeyBytes() []byte {
-	bytes := make([]byte, curve25519.PublicKeySize)
+	bytes := make([]byte, PublicKeySize)
 	copy(bytes, d.key)
 	return bytes
 }
@@ -47,7 +47,7 @@ func (d *DJBPublicKey) Equal(key PublicKey) bool {
 }
 
 func (d *DJBPublicKey) VerifySignature(signature []byte, messages ...[]byte) (bool, error) {
-	if len(signature) != curve25519.SignatureSize {
+	if len(signature) != SignatureSize {
 		return false, nil
 	}
 
