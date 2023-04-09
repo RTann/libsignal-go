@@ -52,7 +52,7 @@ func (s *State) AliceBaseKey() []byte {
 }
 
 func (s *State) Version() uint32 {
-	v := s.session.SessionVersion
+	v := s.session.GetSessionVersion()
 	if v == 0 {
 		return uint32(2)
 	}
