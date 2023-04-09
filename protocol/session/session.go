@@ -1,4 +1,5 @@
-// Package session implements a protocol session.
+// Package session implements the functionality necessary to establish
+// encrypted peer and group sessions.
 package session
 
 import (
