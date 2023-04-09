@@ -30,7 +30,7 @@ func TestGroupNoSendSession(t *testing.T) {
 
 	aliceSession := &session.GroupSession{
 		SenderAddress:  senderAddress,
-		LocalDistID:    distributionID,
+		DistID:         distributionID,
 		SenderKeyStore: aliceStore.GroupStore(),
 	}
 	_, err := aliceSession.EncryptMessage(ctx, random, []byte("space camp?"))
@@ -49,7 +49,7 @@ func TestGroupNoRecvSession(t *testing.T) {
 
 	aliceSession := session.GroupSession{
 		SenderAddress:  senderAddress,
-		LocalDistID:    distributionID,
+		DistID:         distributionID,
 		SenderKeyStore: aliceStore.GroupStore(),
 	}
 	_, err := aliceSession.NewSenderKeyDistribution(ctx, random)
@@ -78,7 +78,7 @@ func TestGroupBasic(t *testing.T) {
 
 	aliceSession := session.GroupSession{
 		SenderAddress:  senderAddress,
-		LocalDistID:    distributionID,
+		DistID:         distributionID,
 		SenderKeyStore: aliceStore.GroupStore(),
 	}
 	sentDistributionMsg, err := aliceSession.NewSenderKeyDistribution(ctx, random)
@@ -116,7 +116,7 @@ func TestGroupLargeMessages(t *testing.T) {
 
 	aliceSession := session.GroupSession{
 		SenderAddress:  senderAddress,
-		LocalDistID:    distributionID,
+		DistID:         distributionID,
 		SenderKeyStore: aliceStore.GroupStore(),
 	}
 	sentDistributionMsg, err := aliceSession.NewSenderKeyDistribution(ctx, random)
@@ -156,7 +156,7 @@ func TestGroupBasicRatchet(t *testing.T) {
 
 	aliceSession := session.GroupSession{
 		SenderAddress:  senderAddress,
-		LocalDistID:    distributionID,
+		DistID:         distributionID,
 		SenderKeyStore: aliceStore.GroupStore(),
 	}
 	sentDistributionMsg, err := aliceSession.NewSenderKeyDistribution(ctx, random)
@@ -211,7 +211,7 @@ func TestGroupLateJoin(t *testing.T) {
 
 	aliceSession := session.GroupSession{
 		SenderAddress:  senderAddress,
-		LocalDistID:    distributionID,
+		DistID:         distributionID,
 		SenderKeyStore: aliceStore.GroupStore(),
 	}
 	sentDistributionMsg, err := aliceSession.NewSenderKeyDistribution(ctx, random)
@@ -255,7 +255,7 @@ func TestGroupOutOfOrder(t *testing.T) {
 
 	aliceSession := session.GroupSession{
 		SenderAddress:  senderAddress,
-		LocalDistID:    distributionID,
+		DistID:         distributionID,
 		SenderKeyStore: aliceStore.GroupStore(),
 	}
 	sentDistributionMsg, err := aliceSession.NewSenderKeyDistribution(ctx, random)
@@ -311,7 +311,7 @@ func TestGroupTooFarInFuture(t *testing.T) {
 
 	aliceSession := session.GroupSession{
 		SenderAddress:  senderAddress,
-		LocalDistID:    distributionID,
+		DistID:         distributionID,
 		SenderKeyStore: aliceStore.GroupStore(),
 	}
 	sentDistributionMsg, err := aliceSession.NewSenderKeyDistribution(ctx, random)
@@ -351,7 +351,7 @@ func TestGroupMessageKeyLimit(t *testing.T) {
 
 	aliceSession := session.GroupSession{
 		SenderAddress:  senderAddress,
-		LocalDistID:    distributionID,
+		DistID:         distributionID,
 		SenderKeyStore: aliceStore.GroupStore(),
 	}
 	sentDistributionMsg, err := aliceSession.NewSenderKeyDistribution(ctx, random)

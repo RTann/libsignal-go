@@ -14,7 +14,7 @@ import (
 func TestSenderKey(t *testing.T) {
 	signatureKeyPair, err := curve.GenerateKeyPair(rand.Reader)
 	require.NoError(t, err)
-	
+
 	senderKey1, err := NewSenderKey(rand.Reader, SenderKeyConfig{
 		Version:      SenderKeyVersion,
 		DistID:       distribution.MustParse("d1d1d1d1-7000-11eb-b32a-33b8a8a487a6"),

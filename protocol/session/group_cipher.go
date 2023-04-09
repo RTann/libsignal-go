@@ -16,12 +16,12 @@ import (
 )
 
 func (g *GroupSession) EncryptMessage(ctx context.Context, random io.Reader, plaintext []byte) (*message.SenderKey, error) {
-	record, exists, err := g.SenderKeyStore.Load(ctx, g.SenderAddress, g.LocalDistID)
+	record, exists, err := g.SenderKeyStore.Load(ctx, g.SenderAddress, g.DistID)
 	if err != nil {
 		return nil, err
 	}
 	if !exists {
-		return nil, fmt.Errorf("no sender key state for distribution ID %s", g.LocalDistID.String())
+		return nil, fmt.Errorf("no sender key state for distribution ID %s", g.DistID.String())
 	}
 
 	state, err := record.State()
@@ -47,7 +47,7 @@ func (g *GroupSession) EncryptMessage(ctx context.Context, random io.Reader, pla
 
 	msg, err := message.NewSenderKey(random, message.SenderKeyConfig{
 		Version:      uint8(state.Version()),
-		DistID:       g.LocalDistID,
+		DistID:       g.DistID,
 		ChainID:      state.ChainID(),
 		Iteration:    messageKey.Iteration(),
 		Ciphertext:   ciphertext,
@@ -59,7 +59,7 @@ func (g *GroupSession) EncryptMessage(ctx context.Context, random io.Reader, pla
 
 	state.SetSenderChainKey(senderChainKey.Next())
 
-	err = g.SenderKeyStore.Store(ctx, g.SenderAddress, g.LocalDistID, record)
+	err = g.SenderKeyStore.Store(ctx, g.SenderAddress, g.DistID, record)
 	if err != nil {
 		return nil, err
 	}

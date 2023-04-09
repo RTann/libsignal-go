@@ -24,7 +24,7 @@ type GroupSession struct {
 	// DistID is the distribution ID of the group.
 	//
 	// It is meant to be populated by a sender, only.
-	DistID    distribution.ID
+	DistID         distribution.ID
 	SenderKeyStore GroupStore
 }
 
