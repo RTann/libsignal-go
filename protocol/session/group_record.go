@@ -10,6 +10,7 @@ import (
 
 const maxSenderKeyStates = 5
 
+// GroupRecord holds a record of a group session's current and past states.
 type GroupRecord struct {
 	states []*GroupState
 }

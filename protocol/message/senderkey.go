@@ -16,6 +16,8 @@ import (
 
 var _ Ciphertext = (*SenderKey)(nil)
 
+// SenderKey represents a sender key message
+// for group messaging.
 type SenderKey struct {
 	version    uint8
 	distID     distribution.ID
@@ -25,6 +27,7 @@ type SenderKey struct {
 	serialized []byte
 }
 
+// SenderKeyConfig represents the configuration for a SenderKey message.
 type SenderKeyConfig struct {
 	Version      uint8
 	DistID       distribution.ID
@@ -126,11 +129,15 @@ func (s *SenderKey) Message() []byte {
 	return s.ciphertext
 }
 
+// VerifySignature verifies the signature is a valid signature
+// of the messages by the public key.
 func (s *SenderKey) VerifySignature(signatureKey curve.PublicKey) (bool, error) {
 	idx := len(s.serialized) - curve.SignatureSize
 	return signatureKey.VerifySignature(s.serialized[idx:], s.serialized[:idx])
 }
 
+// SenderKeyDistribution represents a sender key distribution
+// message for group messaging.
 type SenderKeyDistribution struct {
 	version    uint8
 	distID     distribution.ID
@@ -141,6 +148,8 @@ type SenderKeyDistribution struct {
 	serialized []byte
 }
 
+// SenderKeyDistConfig represents the configuration for
+// a SenderKeyDistribution message.
 type SenderKeyDistConfig struct {
 	Version    uint8
 	DistID     distribution.ID

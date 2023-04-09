@@ -14,18 +14,22 @@ import (
 	"github.com/RTann/libsignal-go/protocol/message"
 )
 
+// GroupSession represents a unidirectional group sender-key encrypted session.
+// It may only be used for sending or for receiving, but not both.
 type GroupSession struct {
 	// SenderAddress is the address of the user sending the message.
 	//
-	// It is meant to be populated by both the sender and the receiver.
+	// It is meant to be populated by both a sender and a receiver.
 	SenderAddress address.Address
-	// LocalDistID is the distribution ID of the sender.
+	// DistID is the distribution ID of the group.
 	//
-	// It is meant to be populated by the sender, only.
-	LocalDistID    distribution.ID
+	// It is meant to be populated by a sender, only.
+	DistID    distribution.ID
 	SenderKeyStore GroupStore
 }
 
+// ProcessSenderKeyDistribution processes a group sender-key distribution message
+// to establish a group session to receive messages from the sender.
 func (g *GroupSession) ProcessSenderKeyDistribution(ctx context.Context, message *message.SenderKeyDistribution) error {
 	glog.Infof("%s Processing SenderKey distribution %s with chain ID %s", g.SenderAddress, message.DistributionID(), message.ChainID())
 
@@ -53,8 +57,9 @@ func (g *GroupSession) ProcessSenderKeyDistribution(ctx context.Context, message
 	return err
 }
 
+// NewSenderKeyDistribution constructs a sender-key distribution message for establishing a group session.
 func (g *GroupSession) NewSenderKeyDistribution(ctx context.Context, random io.Reader) (*message.SenderKeyDistribution, error) {
-	record, exists, err := g.SenderKeyStore.Load(ctx, g.SenderAddress, g.LocalDistID)
+	record, exists, err := g.SenderKeyStore.Load(ctx, g.SenderAddress, g.DistID)
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +68,9 @@ func (g *GroupSession) NewSenderKeyDistribution(ctx context.Context, random io.R
 		if err != nil {
 			return nil, err
 		}
-		glog.Infof("Creating SenderKey for distribution %s with chain ID %d", g.LocalDistID, chainID)
+		// libsignal-protocol-java uses 31-bit integers.
+		chainID >>= 1
+		glog.Infof("Creating SenderKey for distribution %s with chain ID %d", g.DistID, chainID)
 
 		senderKey := make([]byte, 32)
 		_, err = io.ReadFull(random, senderKey)
@@ -90,7 +97,7 @@ func (g *GroupSession) NewSenderKeyDistribution(ctx context.Context, random io.R
 			return nil, err
 		}
 
-		err = g.SenderKeyStore.Store(ctx, g.SenderAddress, g.LocalDistID, record)
+		err = g.SenderKeyStore.Store(ctx, g.SenderAddress, g.DistID, record)
 		if err != nil {
 			return nil, err
 		}
@@ -110,7 +117,7 @@ func (g *GroupSession) NewSenderKeyDistribution(ctx context.Context, random io.R
 
 	return message.NewSenderKeyDistribution(message.SenderKeyDistConfig{
 		Version:    uint8(state.Version()),
-		DistID:     g.LocalDistID,
+		DistID:     g.DistID,
 		ChainID:    state.ChainID(),
 		Iteration:  senderChainKey.Iteration(),
 		ChainKey:   senderChainKey.Seed(),

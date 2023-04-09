@@ -6,6 +6,7 @@ import (
 	"github.com/RTann/libsignal-go/protocol/senderkey"
 )
 
+// GroupState represents a group session's state.
 type GroupState struct {
 	state *v1.SenderKeyStateStructure
 }

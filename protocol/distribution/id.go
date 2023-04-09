@@ -1,4 +1,4 @@
-// Package distribution defines
+// Package distribution defines a group distribution ID.
 package distribution
 
 import "github.com/google/uuid"
