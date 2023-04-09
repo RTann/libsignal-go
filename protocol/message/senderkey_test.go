@@ -2,13 +2,13 @@ package message
 
 import (
 	"crypto/rand"
-	"github.com/RTann/libsignal-go/protocol/distribution"
-	"github.com/stretchr/testify/assert"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/RTann/libsignal-go/protocol/curve"
+	"github.com/RTann/libsignal-go/protocol/distribution"
 )
 
 func TestSenderKey(t *testing.T) {

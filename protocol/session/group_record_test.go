@@ -2,12 +2,12 @@ package session
 
 import (
 	"crypto/rand"
-	"github.com/RTann/libsignal-go/protocol/senderkey"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
 
 	"github.com/RTann/libsignal-go/protocol/curve"
+	"github.com/RTann/libsignal-go/protocol/senderkey"
 )
 
 var _ suite.TestingSuite = (*groupRecordTestSuite)(nil)
