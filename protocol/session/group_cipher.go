@@ -15,6 +15,7 @@ import (
 	"github.com/RTann/libsignal-go/protocol/senderkey"
 )
 
+// EncryptMessage encrypts the plaintext message.
 func (g *GroupSession) EncryptMessage(ctx context.Context, random io.Reader, plaintext []byte) (*message.SenderKey, error) {
 	record, exists, err := g.SenderKeyStore.Load(ctx, g.SenderAddress, g.DistID)
 	if err != nil {
@@ -67,6 +68,7 @@ func (g *GroupSession) EncryptMessage(ctx context.Context, random io.Reader, pla
 	return msg, nil
 }
 
+// DecryptMessage decrypts the ciphertext message.
 func (g *GroupSession) DecryptMessage(ctx context.Context, ciphertext *message.SenderKey) ([]byte, error) {
 	distributionID := ciphertext.DistributionID()
 	chainID := ciphertext.ChainID()
