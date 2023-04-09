@@ -67,6 +67,37 @@ func NewSenderKey(random io.Reader, cfg SenderKeyConfig) (*SenderKey, error) {
 	}, nil
 }
 
+func NewSenderKeyFromBytes(bytes []byte) (*SenderKey, error) {
+	if len(bytes) < 1+curve.SignatureSize {
+		return nil, errors.New("message too short")
+	}
+
+	version := bytes[0] >> 4
+	if int(version) != SenderKeyVersion {
+		return nil, fmt.Errorf("unsupported message version: %d != %d", int(version), SenderKeyVersion)
+	}
+
+	var message v1.SenderKeyMessage
+	err := proto.Unmarshal(bytes[1:len(bytes)-curve.SignatureSize], &message)
+	if err != nil {
+		return nil, err
+	}
+
+	distID, err := distribution.ParseBytes(message.GetDistributionUuid())
+	if err != nil {
+		return nil, err
+	}
+
+	return &SenderKey{
+		version:    version,
+		distID:     distID,
+		chainID:    message.GetChainId(),
+		iteration:  message.GetIteration(),
+		ciphertext: message.GetCiphertext(),
+		serialized: bytes,
+	}, nil
+}
+
 func (*SenderKey) Type() CiphertextType {
 	return SenderKeyType
 }
