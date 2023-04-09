@@ -286,7 +286,7 @@ func (s *Session) decryptMessageSession(random io.Reader, state *State, cipherte
 	if err != nil {
 		return nil, err
 	}
-	messageKeys, err := s.messageKeys(state, theirEphemeral, chainKey, counter)
+	messageKeys, err := s.messageKey(state, theirEphemeral, chainKey, counter)
 	if err != nil {
 		return nil, err
 	}
@@ -375,7 +375,7 @@ func (s *Session) chainKey(random io.Reader, state *State, theirEphemeral curve.
 	return receiverChainKey, nil
 }
 
-func (s *Session) messageKeys(state *State, theirEphemeral curve.PublicKey, chainKey ratchet.ChainKey, counter uint32) (ratchet.MessageKeys, error) {
+func (s *Session) messageKey(state *State, theirEphemeral curve.PublicKey, chainKey ratchet.ChainKey, counter uint32) (ratchet.MessageKeys, error) {
 	chainIdx := chainKey.Index()
 	if chainIdx > counter {
 		if keys, found, err := state.MessageKeys(theirEphemeral, counter); err != nil {
