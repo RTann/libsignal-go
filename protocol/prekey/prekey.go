@@ -21,8 +21,8 @@ type PreKey struct {
 }
 
 // NewPreKey creates a new pre-key.
-func NewPreKey(id ID, key *curve.KeyPair) *PreKey {
-	return &PreKey{
+func NewPreKey(id ID, key curve.KeyPair) PreKey {
+	return PreKey{
 		preKey: &v1.PreKeyRecordStructure{
 			Id:         uint32(id),
 			PublicKey:  key.PublicKey().Bytes(),
@@ -32,6 +32,6 @@ func NewPreKey(id ID, key *curve.KeyPair) *PreKey {
 }
 
 // KeyPair returns the pre-key's public/private key pair.
-func (s *PreKey) KeyPair() (*curve.KeyPair, error) {
+func (s *PreKey) KeyPair() (curve.KeyPair, error) {
 	return curve.NewKeyPair(s.preKey.GetPrivateKey(), s.preKey.GetPublicKey())
 }

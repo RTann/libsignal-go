@@ -9,6 +9,7 @@ import (
 	"crypto/rand"
 	"crypto/sha512"
 	"io"
+	"sync"
 
 	"filippo.io/edwards25519"
 
@@ -35,9 +36,15 @@ type PrivateKey struct {
 	key       []byte
 	scalarKey *edwards25519.Scalar
 	ecdhKey   *ecdh.PrivateKey
+
+	publicKey []byte
+	publicKeyOnce sync.Once
 }
 
 // GeneratePrivateKey generates a cryptographic random private key.
+//
+// It is recommended to use a cryptographic random reader.
+// If random is `nil`, then crypto/rand.Reader is used.
 func GeneratePrivateKey(r io.Reader) (*PrivateKey, error) {
 	if r == nil {
 		r = rand.Reader
@@ -92,7 +99,10 @@ func (p *PrivateKey) Bytes() []byte {
 
 // PublicKeyBytes returns the public key in the form of a Montgomery u-point.
 func (p *PrivateKey) PublicKeyBytes() []byte {
-	return xtou(p.key)
+	p.publicKeyOnce.Do(func() {
+		p.publicKey = xtou(p.key)
+	})
+	return p.publicKey
 }
 
 // Agreement computes the ECDH shared key between the private key and
@@ -113,6 +123,9 @@ func (p *PrivateKey) Agreement(key []byte) ([]byte, error) {
 // Sign calculates an XEdDSA signature using the X25519 private key directly.
 //
 // The calculated signature is a valid ed25519 signature.
+//
+// It is recommended to use a cryptographic random reader.
+// If random is `nil`, then crypto/rand.Reader is used.
 func (p *PrivateKey) Sign(random io.Reader, messages ...[]byte) ([]byte, error) {
 	if random == nil {
 		random = rand.Reader

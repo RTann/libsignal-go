@@ -18,15 +18,15 @@ type Scannable struct {
 }
 
 // NewScannable creates a new scannable fingerprint.
-func NewScannable(version uint32, local, remote []byte) (*Scannable, error) {
+func NewScannable(version uint32, local, remote []byte) (Scannable, error) {
 	if len(local) < 32 {
-		return nil, fmt.Errorf("invalid local fingerprint length: %d < 32", len(local))
+		return Scannable{}, fmt.Errorf("invalid local fingerprint length: %d < 32", len(local))
 	}
 	if len(remote) < 32 {
-		return nil, fmt.Errorf("invalid remote fingerprint length: %d < 32", len(remote))
+		return Scannable{}, fmt.Errorf("invalid remote fingerprint length: %d < 32", len(remote))
 	}
 
-	return &Scannable{
+	return Scannable{
 		version: version,
 		local:   local[:32],
 		remote:  remote[:32],
@@ -35,7 +35,7 @@ func NewScannable(version uint32, local, remote []byte) (*Scannable, error) {
 
 // Bytes returns an encoding of the scannable fingerprint.
 func (s *Scannable) Bytes() ([]byte, error) {
-	combined := &v1.CombinedFingerprints{
+	combined := v1.CombinedFingerprints{
 		Version: pointer.To(s.version),
 		LocalFingerprint: &v1.LogicalFingerprint{
 			Content: s.local,
@@ -45,7 +45,7 @@ func (s *Scannable) Bytes() ([]byte, error) {
 		},
 	}
 
-	bytes, err := proto.Marshal(combined)
+	bytes, err := proto.Marshal(&combined)
 	if err != nil {
 		return nil, err
 	}

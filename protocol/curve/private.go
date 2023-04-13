@@ -19,6 +19,9 @@ type PrivateKey interface {
 	// and the given public key.
 	Agreement(key PublicKey) ([]byte, error)
 	// Sign calculates the digital signature of the messages.
+	//
+	// It is recommended to use a cryptographic random reader.
+	// If random is `nil`, then crypto/rand.Reader is used.
 	Sign(random io.Reader, messages ...[]byte) ([]byte, error)
 }
 

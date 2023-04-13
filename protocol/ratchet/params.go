@@ -10,7 +10,7 @@ import (
 // perform X3DH.
 type AliceParameters struct {
 	OurIdentityKeyPair identity.KeyPair
-	OurBaseKeyPair     *curve.KeyPair
+	OurBaseKeyPair     curve.KeyPair
 
 	TheirIdentityKey   identity.Key
 	TheirSignedPreKey  curve.PublicKey
@@ -23,9 +23,9 @@ type AliceParameters struct {
 // perform X3DH.
 type BobParameters struct {
 	OurIdentityKeyPair   identity.KeyPair
-	OurSignedPreKeyPair  *curve.KeyPair
-	OurOneTimePreKeyPair *curve.KeyPair
-	OurRatchetKeyPair    *curve.KeyPair
+	OurSignedPreKeyPair  curve.KeyPair
+	OurOneTimePreKeyPair curve.KeyPair
+	OurRatchetKeyPair    curve.KeyPair
 
 	TheirIdentityKey identity.Key
 	TheirBaseKey     curve.PublicKey

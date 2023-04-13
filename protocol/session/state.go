@@ -196,7 +196,7 @@ func (s *State) AddReceiverChain(sender curve.PublicKey, chainKey ratchet.ChainK
 	}
 }
 
-func (s *State) SetSenderChain(sender *curve.KeyPair, nextChainKey ratchet.ChainKey) {
+func (s *State) SetSenderChain(sender curve.KeyPair, nextChainKey ratchet.ChainKey) {
 	s.session.SenderChain = &v1.SessionStructure_Chain{
 		SenderRatchetKey:        sender.PublicKey().Bytes(),
 		SenderRatchetKeyPrivate: sender.PrivateKey().Bytes(),
