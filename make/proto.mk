@@ -3,7 +3,7 @@ SILENT ?= @
 
 # Protocol Buffers
 
-PROTOC_VERSION := 22.2
+PROTOC_VERSION := 23.1
 
 PROTOC_DIR := $(BASE_DIR)/.proto
 $(PROTOC_DIR):
