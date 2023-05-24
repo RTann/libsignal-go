@@ -6,7 +6,7 @@ require (
 	filippo.io/edwards25519 v1.0.0
 	github.com/golang/glog v1.1.1
 	github.com/google/uuid v1.3.0
-	github.com/stretchr/testify v1.8.2
+	github.com/stretchr/testify v1.8.3
 	golang.org/x/crypto v0.9.0
 	golang.org/x/tools v0.9.1
 	google.golang.org/protobuf v1.30.0
