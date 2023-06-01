@@ -9,13 +9,21 @@ import (
 	"golang.org/x/crypto/hkdf"
 )
 
-const initRootInfo = "WhisperText"
+var (
+	initRootInfo      = []byte("WhisperText")
+	initKyberRootInfo = []byte("WhisperText_X25519_SHA-256_CRYSTALS-KYBER-1024")
+)
 
 // DeriveKeys derives a root key and chain key based on the secret input
 // for the root KDF chain.
-func DeriveKeys(secretInput []byte) (RootKey, ChainKey, error) {
+func DeriveKeys(secretInput []byte, kyber bool) (RootKey, ChainKey, error) {
+	info := initRootInfo
+	if kyber {
+		info = initKyberRootInfo
+	}
+
 	secrets := make([]byte, 64)
-	kdf := hkdf.New(sha256.New, secretInput, nil, []byte(initRootInfo))
+	kdf := hkdf.New(sha256.New, secretInput, nil, info)
 	_, err := io.ReadFull(kdf, secrets)
 	if err != nil {
 		return RootKey{}, ChainKey{}, err

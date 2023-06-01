@@ -73,7 +73,7 @@ func TestPreKey(t *testing.T) {
 	assert.True(t, exists)
 	version, err := aliceSessionWithBob.Version()
 	assert.NoError(t, err)
-	assert.Equal(t, uint32(3), version)
+	assert.Equal(t, uint32(message.PreKyberCiphertextVersion), version)
 
 	originalMsg := []byte("L'homme est condamné à être libre")
 	outgoingMsg, err := aliceSession.EncryptMessage(ctx, originalMsg)
@@ -103,7 +103,7 @@ func TestPreKey(t *testing.T) {
 	assert.True(t, exists)
 	version, err = bobSessionWithAlice.Version()
 	assert.NoError(t, err)
-	assert.Equal(t, uint32(3), version)
+	assert.Equal(t, uint32(message.PreKyberCiphertextVersion), version)
 
 	bobResponse := []byte("Who watches the watchers?")
 	bobOutgoing, err := bobSession.EncryptMessage(ctx, bobResponse)
@@ -505,7 +505,7 @@ func TestRepeatBundleMessage(t *testing.T) {
 	assert.True(t, exists)
 	version, err := aliceSessionWithBob.Version()
 	assert.NoError(t, err)
-	assert.Equal(t, uint32(3), version)
+	assert.Equal(t, uint32(message.PreKyberCiphertextVersion), version)
 
 	originalMsg := []byte("L'homme est condamné à être libre")
 	outgoingMsg1, err := aliceSession.EncryptMessage(ctx, originalMsg)
@@ -604,7 +604,7 @@ func TestOptionalOneTimePreKey(t *testing.T) {
 	assert.True(t, exists)
 	version, err := aliceSessionWithBob.Version()
 	assert.NoError(t, err)
-	assert.Equal(t, uint32(3), version)
+	assert.Equal(t, uint32(message.PreKyberCiphertextVersion), version)
 
 	originalMsg := []byte("L'homme est condamné à être libre")
 	outgoingMsg, err := aliceSession.EncryptMessage(ctx, originalMsg)

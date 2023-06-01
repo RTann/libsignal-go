@@ -3,6 +3,7 @@ package ratchet
 import (
 	"github.com/RTann/libsignal-go/protocol/curve"
 	"github.com/RTann/libsignal-go/protocol/identity"
+	"github.com/RTann/libsignal-go/protocol/kem"
 )
 
 // AliceParameters represents the "Alice" side
@@ -16,6 +17,7 @@ type AliceParameters struct {
 	TheirSignedPreKey  curve.PublicKey
 	TheirOneTimePreKey curve.PublicKey
 	TheirRatchetKey    curve.PublicKey
+	TheirKyberPreKey   kem.PublicKey
 }
 
 // BobParameters represents the "Bob" side
@@ -26,7 +28,9 @@ type BobParameters struct {
 	OurSignedPreKeyPair  *curve.KeyPair
 	OurOneTimePreKeyPair *curve.KeyPair
 	OurRatchetKeyPair    *curve.KeyPair
+	OurKyberPreKeyPair   kem.KeyPair
 
-	TheirIdentityKey identity.Key
-	TheirBaseKey     curve.PublicKey
+	TheirIdentityKey     identity.Key
+	TheirBaseKey         curve.PublicKey
+	TheirKyberCiphertext []byte
 }

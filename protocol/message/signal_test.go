@@ -31,7 +31,7 @@ func testSignalMsg(t *testing.T) *Signal {
 	require.NoError(t, err)
 
 	signal, err := NewSignal(SignalConfig{
-		Version:             3,
+		Version:             CiphertextVersion,
 		MACKey:              macKey,
 		SenderRatchetKey:    senderRatchetKeyPair.PublicKey(),
 		PreviousCounter:     41,

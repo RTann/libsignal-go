@@ -4,6 +4,7 @@ import (
 	"github.com/RTann/libsignal-go/protocol/address"
 	"github.com/RTann/libsignal-go/protocol/curve"
 	"github.com/RTann/libsignal-go/protocol/identity"
+	"github.com/RTann/libsignal-go/protocol/kem"
 )
 
 // Bundle represents a pre-key bundle as defined by the X3DH protocol.
@@ -18,4 +19,7 @@ type Bundle struct {
 	SignedPreKeyPublic    curve.PublicKey
 	SignedPreKeySignature []byte
 	IdentityKey           identity.Key
+	KyberPreKeyID         *ID
+	KyberPreKeyPublic     kem.PublicKey
+	KyberSignature        []byte
 }

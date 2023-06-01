@@ -15,6 +15,7 @@ import (
 	"github.com/RTann/libsignal-go/protocol/direction"
 	v1 "github.com/RTann/libsignal-go/protocol/generated/v1"
 	"github.com/RTann/libsignal-go/protocol/identity"
+	"github.com/RTann/libsignal-go/protocol/kem"
 	"github.com/RTann/libsignal-go/protocol/message"
 	"github.com/RTann/libsignal-go/protocol/perrors"
 	"github.com/RTann/libsignal-go/protocol/prekey"
@@ -27,7 +28,13 @@ type Session struct {
 	SessionStore      Store
 	PreKeyStore       prekey.Store
 	SignedPreKeyStore prekey.SignedStore
+	KyberPreKeyStore  prekey.KyberStore
 	IdentityKeyStore  identity.Store
+}
+
+type preKeys struct {
+	preKeyID      *prekey.ID
+	kyberPreKeyID *prekey.ID
 }
 
 // ProcessPreKey processes a pre-key message to initialize a "Bob" session
@@ -35,7 +42,7 @@ type Session struct {
 //
 // This method returns the one-time pre-key used by "Alice" when sending the initial message,
 // if one was used.
-func (s *Session) ProcessPreKey(ctx context.Context, record *Record, message *message.PreKey) (*prekey.ID, error) {
+func (s *Session) ProcessPreKey(ctx context.Context, record *Record, message *message.PreKey) (*preKeys, error) {
 	theirIdentityKey := message.IdentityKey()
 
 	trusted, err := s.IdentityKeyStore.IsTrustedIdentity(ctx, s.RemoteAddress, theirIdentityKey, direction.Receiving)
@@ -46,7 +53,7 @@ func (s *Session) ProcessPreKey(ctx context.Context, record *Record, message *me
 		return nil, perrors.ErrUntrustedIdentity(s.RemoteAddress)
 	}
 
-	unsignedPreKeyID, err := s.processPreKeyV3(ctx, record, message)
+	usedPreKeys, err := s.processPreKey(ctx, record, message)
 	if err != nil {
 		return nil, err
 	}
@@ -56,10 +63,10 @@ func (s *Session) ProcessPreKey(ctx context.Context, record *Record, message *me
 		return nil, err
 	}
 
-	return unsignedPreKeyID, nil
+	return usedPreKeys, nil
 }
 
-func (s *Session) processPreKeyV3(ctx context.Context, record *Record, message *message.PreKey) (*prekey.ID, error) {
+func (s *Session) processPreKey(ctx context.Context, record *Record, message *message.PreKey) (*preKeys, error) {
 	exists, err := record.HasSessionState(uint32(message.Version()), message.BaseKey().Bytes())
 	if err != nil {
 		return nil, err
@@ -78,6 +85,20 @@ func (s *Session) processPreKeyV3(ctx context.Context, record *Record, message *
 		ourSignedPreKeyPair, err = ourSignedPreKeyRecord.KeyPair()
 		if err != nil {
 			return nil, err
+		}
+	}
+
+	var ourKyberPreKeyPair kem.KeyPair
+	if kyberPreKeyID := message.KyberPreKeyID(); kyberPreKeyID != nil {
+		ourKyberPreKeyRecord, exists, err := s.KyberPreKeyStore.Load(ctx, *kyberPreKeyID)
+		if err != nil {
+			return nil, err
+		}
+		if exists {
+			ourKyberPreKeyPair, err = ourKyberPreKeyRecord.KeyPair()
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -104,9 +125,14 @@ func (s *Session) processPreKeyV3(ctx context.Context, record *Record, message *
 		OurSignedPreKeyPair:  ourSignedPreKeyPair,
 		OurOneTimePreKeyPair: ourOneTimePreKeyPair,
 		OurRatchetKeyPair:    ourSignedPreKeyPair,
+		OurKyberPreKeyPair:   ourKyberPreKeyPair,
 		TheirIdentityKey:     message.IdentityKey(),
 		TheirBaseKey:         message.BaseKey(),
+		TheirKyberCiphertext: message.KyberCiphertext(),
 	})
+	if err != nil {
+		return nil, err
+	}
 
 	session.SetLocalRegistrationID(s.IdentityKeyStore.LocalRegistrationID(ctx))
 	session.SetRemoteRegistrationID(message.RegistrationID())
@@ -114,7 +140,10 @@ func (s *Session) processPreKeyV3(ctx context.Context, record *Record, message *
 
 	record.PromoteState(session)
 
-	return message.PreKeyID(), nil
+	return &PreKeysUsed{
+		preKeyID:      message.PreKeyID(),
+		kyberPreKeyID: message.KyberPreKeyID(),
+	}, nil
 }
 
 // ProcessPreKeyBundle processes a pre-key bundle to initialize an "Alice" session
@@ -136,6 +165,17 @@ func (s *Session) ProcessPreKeyBundle(ctx context.Context, random io.Reader, bun
 	}
 	if !ok {
 		return errors.New("signature validation failed")
+	}
+
+	theirKyberPreKey := bundle.KyberPreKeyPublic
+	if theirKyberPreKey != nil {
+		ok, err := theirIdentityKey.PublicKey().VerifySignature(bundle.KyberSignature, theirKyberPreKey.Bytes())
+		if err != nil {
+			return err
+		}
+		if !ok {
+			return errors.New("signature validation failed")
+		}
 	}
 
 	record, exists, err := s.SessionStore.Load(ctx, s.RemoteAddress)
@@ -161,6 +201,7 @@ func (s *Session) ProcessPreKeyBundle(ctx context.Context, random io.Reader, bun
 		TheirSignedPreKey:  theirSignedPreKey,
 		TheirOneTimePreKey: theirOneTimePreKey,
 		TheirRatchetKey:    theirSignedPreKey,
+		TheirKyberPreKey:   theirKyberPreKey,
 	})
 	if err != nil {
 		return err
@@ -174,6 +215,9 @@ func (s *Session) ProcessPreKeyBundle(ctx context.Context, random io.Reader, bun
 	glog.Infof("set_unacknowledged_pre_key_message for: %s with preKeyId: %s", s.RemoteAddress, preKeyString)
 
 	session.SetUnacknowledgedPreKeyMessage(theirOneTimePreKeyID, bundle.SignedPreKeyID, ourBaseKeyPair.PublicKey())
+	if bundle.KyberPreKeyID != nil {
+		session.SetUnacknowledgedKyberPreKeyID(*bundle.KyberPreKeyID)
+	}
 
 	session.SetLocalRegistrationID(s.IdentityKeyStore.LocalRegistrationID(ctx))
 	session.SetRemoteRegistrationID(bundle.RegistrationID)
@@ -225,8 +269,9 @@ func initializeAliceSession(random io.Reader, params *ratchet.AliceParameters) (
 		return nil, err
 	}
 
-	// 32 * 5 = 160
-	secrets := bytes.NewBuffer(make([]byte, 0, 160))
+	// TODO: libsignal still has 5 for some reason...
+	// 32 * 6 = 192
+	secrets := bytes.NewBuffer(make([]byte, 0, 192))
 	secrets.Write(discontinuityBytes)
 	secrets.Write(dh1)
 	secrets.Write(dh2)
@@ -237,11 +282,21 @@ func initializeAliceSession(random io.Reader, params *ratchet.AliceParameters) (
 		if err != nil {
 			return nil, err
 		}
-
 		secrets.Write(dh4)
 	}
 
-	rootKey, chainKey, err := ratchet.DeriveKeys(secrets.Bytes())
+	var (
+		kyber           bool
+		kyberCiphertext []byte
+	)
+	if params.TheirKyberPreKey != nil {
+		kyber = true
+		var sharedSecret []byte
+		sharedSecret, kyberCiphertext = params.TheirKyberPreKey.Encapsulate()
+		secrets.Write(sharedSecret)
+	}
+
+	rootKey, chainKey, err := ratchet.DeriveKeys(secrets.Bytes(), kyber)
 	if err != nil {
 		return nil, err
 	}
@@ -252,13 +307,16 @@ func initializeAliceSession(random io.Reader, params *ratchet.AliceParameters) (
 	}
 
 	session := NewState(&v1.SessionStructure{
-		SessionVersion:       message.CiphertextVersion,
+		SessionVersion:       message.Version(kyber),
 		LocalIdentityPublic:  localIdentity.PublicKey().Bytes(),
 		RemoteIdentityPublic: params.TheirIdentityKey.Bytes(),
 		RootKey:              sendingChainRootKey.Bytes(),
 	})
 	session.AddReceiverChain(params.TheirRatchetKey, chainKey)
 	session.SetSenderChain(sendingRatchetKeyPair, sendingChainChainKey)
+	if kyberCiphertext != nil {
+		session.SetKyberCiphertext(kyberCiphertext)
+	}
 
 	return session, nil
 }
@@ -290,8 +348,8 @@ func initializeBobSession(params *ratchet.BobParameters) (*State, error) {
 		return nil, err
 	}
 
-	// 32 * 5 = 160
-	secrets := bytes.NewBuffer(make([]byte, 0, 160))
+	// 32 * 6 = 192
+	secrets := bytes.NewBuffer(make([]byte, 0, 192))
 	secrets.Write(discontinuityBytes)
 	secrets.Write(dh1)
 	secrets.Write(dh2)
@@ -302,14 +360,31 @@ func initializeBobSession(params *ratchet.BobParameters) (*State, error) {
 		if err != nil {
 			return nil, err
 		}
-
 		secrets.Write(dh4)
 	}
 
-	rootKey, chainKey, err := ratchet.DeriveKeys(secrets.Bytes())
+	var kyber bool
+	switch {
+	case params.OurKyberPreKeyPair != nil && params.TheirKyberCiphertext != nil:
+		kyber = true
+		sharedSecret, err := params.OurKyberPreKeyPair.PrivateKey().Decapsulate(params.TheirKyberCiphertext)
+		if err != nil {
+			return nil, err
+		}
+		secrets.Write(sharedSecret)
+	case params.OurKyberPreKeyPair == nil && params.TheirKyberCiphertext == nil:
+		// Ok.
+	default:
+		return nil, errors.New("both nor none of Kyber pre key and ciphertext must be present")
+	}
+
+	rootKey, chainKey, err := ratchet.DeriveKeys(secrets.Bytes(), kyber)
+	if err != nil {
+		return nil, err
+	}
 
 	session := NewState(&v1.SessionStructure{
-		SessionVersion:       message.CiphertextVersion,
+		SessionVersion:       message.Version(kyber),
 		LocalIdentityPublic:  localIdentity.PublicKey().Bytes(),
 		RemoteIdentityPublic: params.TheirIdentityKey.Bytes(),
 		RootKey:              rootKey.Bytes(),

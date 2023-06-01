@@ -11,5 +11,6 @@ type Store interface {
 	IdentityStore() identity.Store
 	PreKeyStore() prekey.Store
 	SignedPreKeyStore() prekey.SignedStore
+	KyberPreKeyStore() prekey.KyberStore
 	GroupStore() session.GroupStore
 }

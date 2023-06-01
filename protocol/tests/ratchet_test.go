@@ -10,6 +10,8 @@ import (
 
 	"github.com/RTann/libsignal-go/protocol/curve"
 	"github.com/RTann/libsignal-go/protocol/identity"
+	"github.com/RTann/libsignal-go/protocol/kem"
+	"github.com/RTann/libsignal-go/protocol/message"
 	"github.com/RTann/libsignal-go/protocol/ratchet"
 	"github.com/RTann/libsignal-go/protocol/session"
 )
@@ -55,8 +57,10 @@ func TestBobSession(t *testing.T) {
 		OurSignedPreKeyPair:  bobSignedPreKeyPair,
 		OurOneTimePreKeyPair: nil,
 		OurRatchetKeyPair:    bobEphemeralPair,
+		OurKyberPreKeyPair:   nil,
 		TheirIdentityKey:     aliceIdentityPublicKey,
 		TheirBaseKey:         aliceBasePublicKey,
+		TheirKyberCiphertext: nil,
 	}
 
 	bobRecord, err := session.InitializeBobSessionRecord(bobParams)
@@ -74,6 +78,10 @@ func TestBobSession(t *testing.T) {
 	bobSenderChainKey, err := bobRecord.SenderChainKey()
 	assert.NoError(t, err)
 	assert.Equal(t, expectedSenderChain, hex.EncodeToString(bobSenderChainKey.Key()))
+
+	version, err := bobRecord.Version()
+	assert.NoError(t, err)
+	assert.Equal(t, uint32(message.PreKyberCiphertextVersion), version)
 }
 
 func TestAliceSession(t *testing.T) {
@@ -136,4 +144,68 @@ func TestAliceSession(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, exists)
 	assert.Equal(t, expectedReceiverChain, hex.EncodeToString(aliceReceiverChainKey.Key()))
+
+	version, err := aliceRecord.Version()
+	assert.NoError(t, err)
+	assert.Equal(t, uint32(message.PreKyberCiphertextVersion), version)
+}
+
+func TestAgreementKyber(t *testing.T) {
+	aliceIdentityKeyPair, err := identity.GenerateKeyPair(random)
+	require.NoError(t, err)
+	aliceBaseKeyPair, err := curve.GenerateKeyPair(random)
+	require.NoError(t, err)
+
+	bobEphemeralKeyPair, err := curve.GenerateKeyPair(random)
+	require.NoError(t, err)
+	bobIdentityKeyPair, err := identity.GenerateKeyPair(random)
+	require.NoError(t, err)
+	bobSignedKeypair, err := curve.GenerateKeyPair(random)
+	require.NoError(t, err)
+
+	bobKyberPreKeyPair, err := kem.GenerateKeyPair(random, kem.KeyTypeKyber1024)
+	require.NoError(t, err)
+
+	aliceParams := &ratchet.AliceParameters{
+		OurIdentityKeyPair: aliceIdentityKeyPair,
+		OurBaseKeyPair:     aliceBaseKeyPair,
+		TheirIdentityKey:   bobIdentityKeyPair.IdentityKey(),
+		TheirSignedPreKey:  bobSignedKeypair.PublicKey(),
+		TheirOneTimePreKey: nil,
+		TheirRatchetKey:    bobEphemeralKeyPair.PublicKey(),
+		TheirKyberPreKey:   bobKyberPreKeyPair.PublicKey(),
+	}
+	aliceRecord, err := session.InitializeAliceSessionRecord(random, aliceParams)
+	assert.NoError(t, err)
+
+	version, err := aliceRecord.Version()
+	assert.NoError(t, err)
+	assert.Equal(t, uint32(message.CiphertextVersion), version)
+
+	kyberCiphertext, err := aliceRecord.KyberCiphertext()
+	assert.NoError(t, err)
+
+	bobParams := &ratchet.BobParameters{
+		OurIdentityKeyPair:   bobIdentityKeyPair,
+		OurSignedPreKeyPair:  bobSignedKeypair,
+		OurOneTimePreKeyPair: nil,
+		OurRatchetKeyPair:    bobEphemeralKeyPair,
+		OurKyberPreKeyPair:   bobKyberPreKeyPair,
+		TheirIdentityKey:     aliceIdentityKeyPair.IdentityKey(),
+		TheirBaseKey:         aliceBaseKeyPair.PublicKey(),
+		TheirKyberCiphertext: kyberCiphertext,
+	}
+	bobRecord, err := session.InitializeBobSessionRecord(bobParams)
+	assert.NoError(t, err)
+
+	version, err = bobRecord.Version()
+	assert.NoError(t, err)
+	assert.Equal(t, uint32(message.CiphertextVersion), version)
+
+	bobSenderChainKey, err := bobRecord.SenderChainKey()
+	assert.NoError(t, err)
+	aliceReceiverChainKey, exists, err := aliceRecord.ReceiverChainKey(bobEphemeralKeyPair.PublicKey())
+	assert.NoError(t, err)
+	assert.True(t, exists)
+	assert.Equal(t, bobSenderChainKey, aliceReceiverChainKey)
 }

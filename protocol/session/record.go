@@ -152,3 +152,12 @@ func (r *Record) SenderChainKey() (ratchet.ChainKey, error) {
 
 	return state.SenderChainKey()
 }
+
+func (r *Record) KyberCiphertext() ([]byte, error) {
+	state := r.State()
+	if state == nil {
+		return nil, perrors.ErrNoCurrentSession
+	}
+
+	return state.KyberCiphertext()
+}

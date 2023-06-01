@@ -3,6 +3,7 @@ package session
 import (
 	"bytes"
 	"errors"
+	"math"
 
 	"google.golang.org/protobuf/proto"
 
@@ -22,9 +23,10 @@ const (
 )
 
 var discontinuityBytes = []byte{
-	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
 }
 
 // State represents a session's state.
@@ -238,6 +240,22 @@ func (s *State) SetSenderChainKey(nextChainKey ratchet.ChainKey) {
 	}
 }
 
+func (s *State) KyberCiphertext() ([]byte, error) {
+	pendingKyberPreKey := s.session.GetPendingKyberPreKey()
+	if pendingKyberPreKey == nil {
+		return nil, errors.New("missing pending Kyber pre key")
+	}
+
+	return pendingKyberPreKey.GetCiphertext(), nil
+}
+
+func (s *State) SetKyberCiphertext(ciphertext []byte) {
+	s.session.PendingKyberPreKey = &v1.SessionStructure_PendingKyberPreKey{
+		PreKeyId:   math.MaxUint32, // Set elsewhere.
+		Ciphertext: ciphertext,
+	}
+}
+
 func (s *State) SetMessageKeys(sender curve.PublicKey, messageKeys ratchet.MessageKeys) error {
 	newKeys := &v1.SessionStructure_Chain_MessageKey{
 		Index:     messageKeys.Counter(),
@@ -303,10 +321,20 @@ func (s *State) ClearUnacknowledgedPreKeyMessage() {
 	s.session.PendingPreKey = nil
 }
 
+func (s *State) SetUnacknowledgedKyberPreKeyID(kyberPreKeyID prekey.ID) {
+	pending := s.session.PendingKyberPreKey
+	if pending == nil {
+		panic("TODO")
+	}
+	pending.PreKeyId = uint32(kyberPreKeyID)
+}
+
 type UnacknowledgedPreKeyMessageItems struct {
-	preKeyID       *prekey.ID
-	signedPreKeyID prekey.ID
-	baseKey        curve.PublicKey
+	preKeyID        *prekey.ID
+	signedPreKeyID  prekey.ID
+	baseKey         curve.PublicKey
+	kyberPreKeyID   *prekey.ID
+	kyberCiphertext []byte
 }
 
 func (u UnacknowledgedPreKeyMessageItems) PreKeyID() *prekey.ID {
@@ -321,24 +349,46 @@ func (u UnacknowledgedPreKeyMessageItems) BaseKey() curve.PublicKey {
 	return u.baseKey
 }
 
+func (u UnacknowledgedPreKeyMessageItems) KyberPreKeyID() *prekey.ID {
+	return u.kyberPreKeyID
+}
+
+func (u UnacknowledgedPreKeyMessageItems) KyberCiphertext() []byte {
+	return u.kyberCiphertext
+}
+
 func (s *State) UnacknowledgedPreKeyMessages() (*UnacknowledgedPreKeyMessageItems, error) {
 	pendingPreKey := s.session.GetPendingPreKey()
 	if pendingPreKey == nil {
 		return nil, nil
 	}
 
-	key, err := curve.NewPublicKey(pendingPreKey.GetBaseKey())
+	baseKey, err := curve.NewPublicKey(pendingPreKey.GetBaseKey())
 	if err != nil {
 		return nil, err
 	}
 
-	u := &UnacknowledgedPreKeyMessageItems{
-		signedPreKeyID: prekey.ID(pendingPreKey.GetSignedPreKeyId()),
-		baseKey:        key,
+	var preKeyID *prekey.ID
+	if id := pendingPreKey.GetPreKeyId(); id != 0 {
+		preKeyID = pointer.To(prekey.ID(id))
 	}
 
-	if preKeyID := pendingPreKey.GetPreKeyId(); preKeyID != 0 {
-		u.preKeyID = pointer.To(prekey.ID(preKeyID))
+	var (
+		kyberPreKeyID   *prekey.ID
+		kyberCiphertext []byte
+	)
+	pendingKyberPreKey := s.session.GetPendingKyberPreKey()
+	if id := pendingKyberPreKey.GetPreKeyId(); id != 0 {
+		kyberPreKeyID = pointer.To(prekey.ID(id))
+		kyberCiphertext = pendingKyberPreKey.GetCiphertext()
+	}
+
+	u := &UnacknowledgedPreKeyMessageItems{
+		preKeyID:        preKeyID,
+		signedPreKeyID:  prekey.ID(pendingPreKey.GetSignedPreKeyId()),
+		baseKey:         baseKey,
+		kyberPreKeyID:   kyberPreKeyID,
+		kyberCiphertext: kyberCiphertext,
 	}
 
 	return u, nil

@@ -19,3 +19,13 @@ type SignedStore interface {
 	// Store stores the signed pre-key associated with the given ID in the store.
 	Store(ctx context.Context, id ID, record *SignedPreKey) error
 }
+
+// KyberStore defines a Kyber pre-key store.
+type KyberStore interface {
+	// Load fetches the Kyber pre-key associated with the id from the store.
+	Load(ctx context.Context, id ID) (*KyberPreKey, bool, error)
+	// Store storates the Kyber pre-key associated with the given ID in the store.
+	Store(ctx context.Context, id ID, preKey *KyberPreKey) error
+	// Delete removes the Kyber pre-key entry identified by the given ID from the store.
+	Delete(ctx context.Context, id ID) error
+}

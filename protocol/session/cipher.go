@@ -89,13 +89,15 @@ func (s *Session) EncryptMessage(ctx context.Context, plaintext []byte) (message
 	// If there are unacknowledged pre-key messages, return a pre-key message instead.
 	if items != nil {
 		msg, err = message.NewPreKey(message.PreKeyConfig{
-			Version:        version,
-			RegistrationID: state.LocalRegistrationID(),
-			PreKeyID:       items.PreKeyID(),
-			SignedPreKeyID: items.SignedPreKeyID(),
-			BaseKey:        items.BaseKey(),
-			IdentityKey:    localIdentityKey,
-			Message:        msg.(*message.Signal),
+			Version:         version,
+			RegistrationID:  state.LocalRegistrationID(),
+			PreKeyID:        items.PreKeyID(),
+			SignedPreKeyID:  items.SignedPreKeyID(),
+			KyberPreKeyID:   items.KyberPreKeyID(),
+			KyberCiphertext: items.KyberCiphertext(),
+			BaseKey:         items.BaseKey(),
+			IdentityKey:     localIdentityKey,
+			Message:         msg.(*message.Signal),
 		})
 		if err != nil {
 			return nil, err
@@ -145,7 +147,7 @@ func (s *Session) decryptPreKey(ctx context.Context, random io.Reader, ciphertex
 		record = NewRecord(nil)
 	}
 
-	preKeyID, err := s.ProcessPreKey(ctx, record, ciphertext)
+	usedPreKeys, err := s.ProcessPreKey(ctx, record, ciphertext)
 	if err != nil {
 		return nil, err
 	}
@@ -160,10 +162,16 @@ func (s *Session) decryptPreKey(ctx context.Context, random io.Reader, ciphertex
 		return nil, err
 	}
 
-	if preKeyID != nil {
-		err := s.PreKeyStore.Delete(ctx, *preKeyID)
-		if err != nil {
-			return nil, err
+	if usedPreKeys != nil {
+		if preKeyID := usedPreKeys.preKeyID; preKeyID != nil {
+			if err := s.PreKeyStore.Delete(ctx, *preKeyID); err != nil {
+				return nil, err
+			}
+		}
+		if kyberPreKeyID := usedPreKeys.kyberPreKeyID; kyberPreKeyID != nil {
+			if err := s.KyberPreKeyStore.Delete(ctx, *kyberPreKeyID); err != nil {
+				return nil, err
+			}
 		}
 	}
 

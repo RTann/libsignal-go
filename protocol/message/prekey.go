@@ -18,35 +18,41 @@ var _ Ciphertext = (*PreKey)(nil)
 
 // PreKey represents a pre-key message.
 type PreKey struct {
-	version        uint8
-	registrationID uint32
-	preKeyID       *prekey.ID
-	signedPreKeyID prekey.ID
-	baseKey        curve.PublicKey
-	identityKey    identity.Key
-	message        *Signal
-	serialized     []byte
+	version         uint8
+	registrationID  uint32
+	preKeyID        *prekey.ID
+	signedPreKeyID  prekey.ID
+	kyberPreKeyID   *prekey.ID
+	kyberCiphertext []byte
+	baseKey         curve.PublicKey
+	identityKey     identity.Key
+	message         *Signal
+	serialized      []byte
 }
 
 // PreKeyConfig represents the configuration for a PreKey message.
 type PreKeyConfig struct {
-	Version        uint8
-	RegistrationID uint32
-	PreKeyID       *prekey.ID
-	SignedPreKeyID prekey.ID
-	BaseKey        curve.PublicKey
-	IdentityKey    identity.Key
-	Message        *Signal
+	Version         uint8
+	RegistrationID  uint32
+	PreKeyID        *prekey.ID
+	SignedPreKeyID  prekey.ID
+	KyberPreKeyID   *prekey.ID
+	KyberCiphertext []byte
+	BaseKey         curve.PublicKey
+	IdentityKey     identity.Key
+	Message         *Signal
 }
 
 func NewPreKey(cfg PreKeyConfig) (Ciphertext, error) {
 	message, err := proto.Marshal(&v1.PreKeySignalMessage{
-		RegistrationId: &cfg.RegistrationID,
-		PreKeyId:       (*uint32)(cfg.PreKeyID),
-		SignedPreKeyId: (*uint32)(&cfg.SignedPreKeyID),
-		BaseKey:        cfg.BaseKey.Bytes(),
-		IdentityKey:    cfg.IdentityKey.Bytes(),
-		Message:        cfg.Message.Bytes(),
+		RegistrationId:  &cfg.RegistrationID,
+		PreKeyId:        (*uint32)(cfg.PreKeyID),
+		SignedPreKeyId:  (*uint32)(&cfg.SignedPreKeyID),
+		KyberPreKeyId:   (*uint32)(cfg.KyberPreKeyID),
+		KyberCiphertext: cfg.KyberCiphertext,
+		BaseKey:         cfg.BaseKey.Bytes(),
+		IdentityKey:     cfg.IdentityKey.Bytes(),
+		Message:         cfg.Message.Bytes(),
 	})
 	if err != nil {
 		return nil, err
@@ -59,14 +65,16 @@ func NewPreKey(cfg PreKeyConfig) (Ciphertext, error) {
 	serialized.Write(message)
 
 	return &PreKey{
-		version:        cfg.Version,
-		registrationID: cfg.RegistrationID,
-		preKeyID:       cfg.PreKeyID,
-		signedPreKeyID: cfg.SignedPreKeyID,
-		baseKey:        cfg.BaseKey,
-		identityKey:    cfg.IdentityKey,
-		message:        cfg.Message,
-		serialized:     serialized.Bytes(),
+		version:         cfg.Version,
+		registrationID:  cfg.RegistrationID,
+		preKeyID:        cfg.PreKeyID,
+		signedPreKeyID:  cfg.SignedPreKeyID,
+		kyberPreKeyID:   cfg.KyberPreKeyID,
+		kyberCiphertext: cfg.KyberCiphertext,
+		baseKey:         cfg.BaseKey,
+		identityKey:     cfg.IdentityKey,
+		message:         cfg.Message,
+		serialized:      serialized.Bytes(),
 	}, nil
 }
 
@@ -76,8 +84,11 @@ func NewPreKeyFromBytes(bytes []byte) (Ciphertext, error) {
 	}
 
 	version := bytes[0] >> 4
-	if int(version) != CiphertextVersion {
-		return nil, fmt.Errorf("unsupported message version: %d != %d", int(version), CiphertextVersion)
+	if int(version) < PreKyberCiphertextVersion {
+		return nil, fmt.Errorf("unsupported message version: %d < %d", version, PreKyberCiphertextVersion)
+	}
+	if int(version) > CiphertextVersion {
+		return nil, fmt.Errorf("unsupport message version: %d > %d", version, CiphertextVersion)
 	}
 
 	var message v1.PreKeySignalMessage
@@ -98,6 +109,22 @@ func NewPreKeyFromBytes(bytes []byte) (Ciphertext, error) {
 	if err != nil {
 		return nil, err
 	}
+	if message.SignedPreKeyId == nil {
+		return nil, errors.New("signed pre key ID must be populated")
+	}
+
+	var kyberPreKeyID *prekey.ID
+	kyberCiphertext := message.GetKyberCiphertext()
+	switch {
+	case message.KyberPreKeyId != nil && kyberCiphertext != nil:
+		kyberPreKeyID = pointer.To(prekey.ID(message.GetKyberPreKeyId()))
+	case message.KyberPreKeyId == nil && kyberCiphertext == nil:
+		if version > PreKyberCiphertextVersion {
+			return nil, fmt.Errorf("Kyber pre key ID must be present for this message version: %d", version)
+		}
+	default:
+		return nil, errors.New("both or neither of Kyber pre key ID and Kyber ciphertext must be present")
+	}
 
 	var preKeyID *prekey.ID
 	if message.PreKeyId != nil {
@@ -105,14 +132,16 @@ func NewPreKeyFromBytes(bytes []byte) (Ciphertext, error) {
 	}
 
 	return &PreKey{
-		version:        version,
-		registrationID: message.GetRegistrationId(),
-		preKeyID:       preKeyID,
-		signedPreKeyID: prekey.ID(message.GetSignedPreKeyId()),
-		baseKey:        baseKey,
-		identityKey:    identityKey,
-		message:        msg.(*Signal),
-		serialized:     bytes,
+		version:         version,
+		registrationID:  message.GetRegistrationId(),
+		preKeyID:        preKeyID,
+		signedPreKeyID:  prekey.ID(message.GetSignedPreKeyId()),
+		kyberPreKeyID:   kyberPreKeyID,
+		kyberCiphertext: kyberCiphertext,
+		baseKey:         baseKey,
+		identityKey:     identityKey,
+		message:         msg.(*Signal),
+		serialized:      bytes,
 	}, nil
 }
 
@@ -138,6 +167,14 @@ func (p *PreKey) PreKeyID() *prekey.ID {
 
 func (p *PreKey) SignedPreKeyID() prekey.ID {
 	return p.signedPreKeyID
+}
+
+func (p *PreKey) KyberPreKeyID() *prekey.ID {
+	return p.kyberPreKeyID
+}
+
+func (p *PreKey) KyberCiphertext() []byte {
+	return p.kyberCiphertext
 }
 
 func (p *PreKey) BaseKey() curve.PublicKey {

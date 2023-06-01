@@ -15,7 +15,9 @@ const (
 
 const (
 	// CiphertextVersion is the current version of ciphertext messages.
-	CiphertextVersion = 3
+	CiphertextVersion = 4
+	// PreKyberCiphertextVersion is the last ciphertext version prior to Kyber support.
+	PreKyberCiphertextVersion = 3
 	// SenderKeyVersion is the current version of sender-key messages.
 	SenderKeyVersion = 3
 )
@@ -26,4 +28,13 @@ type Ciphertext interface {
 	Type() CiphertextType
 	// Bytes returns an encoding of the Ciphertext message.
 	Bytes() []byte
+}
+
+// Version returns the current ciphertext version when kyber is true.
+// Otherwise, it returns the last pre-kyber ciphertext version.
+func Version(kyber bool) uint32 {
+	if kyber {
+		return CiphertextVersion
+	}
+	return PreKyberCiphertextVersion
 }
