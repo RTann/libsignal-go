@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	filippo.io/edwards25519 v1.0.0
-	github.com/golang/glog v1.2.0
+	github.com/golang/glog v1.2.1
 	github.com/google/uuid v1.6.0
 	github.com/stretchr/testify v1.9.0
 	golang.org/x/crypto v0.21.0
