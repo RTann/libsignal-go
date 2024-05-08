@@ -8,7 +8,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/stretchr/testify v1.9.0
 	golang.org/x/crypto v0.23.0
-	golang.org/x/tools v0.20.0
+	golang.org/x/tools v0.21.0
 	google.golang.org/protobuf v1.34.0
 )
 
