@@ -13,9 +13,8 @@ var (
 )
 
 // xtou converts an Edwards x-point to a Montgomery u-point.
-func xtou(edX []byte) []byte {
-	k, _ := edwards25519.NewScalar().SetBytes(edX)
-	return new(edwards25519.Point).ScalarBaseMult(k).BytesMontgomery()
+func xtou(edX *edwards25519.Scalar) []byte {
+	return new(edwards25519.Point).ScalarBaseMult(edX).BytesMontgomery()
 }
 
 // utoy converts a Montgomery u-point to an Edwards y-point.

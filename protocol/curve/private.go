@@ -28,14 +28,5 @@ func NewPrivateKey(key []byte) (PrivateKey, error) {
 		return nil, perrors.ErrInvalidKeyLength(PrivateKeySize, len(key))
 	}
 
-	djbKey := make([]byte, len(key))
-	copy(djbKey, key)
-
-	// Clamp the given key.
-	// See step 2 in https://www.rfc-editor.org/rfc/rfc8032#section-5.1.5.
-	djbKey[0] &= 248
-	djbKey[31] &= 63
-	djbKey[31] |= 64
-
-	return newDJBPrivateKey(djbKey)
+	return newDJBPrivateKey(key)
 }

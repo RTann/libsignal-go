@@ -32,35 +32,31 @@ var (
 
 // PrivateKey represents a Montgomery private key used for the XEdDSA scheme.
 type PrivateKey struct {
-	key       []byte
-	scalarKey *edwards25519.Scalar
-	ecdhKey   *ecdh.PrivateKey
+	privateKey []byte
+	publicKey  []byte
+	scalarKey  *edwards25519.Scalar
+	ecdhKey    *ecdh.PrivateKey
 }
 
-// GeneratePrivateKey generates a cryptographic random private key.
-func GeneratePrivateKey(r io.Reader) (*PrivateKey, error) {
-	if r == nil {
-		r = rand.Reader
+// GeneratePrivateKey generates a random private key.
+//
+// It is recommended to use a cryptographic random reader.
+// If random is nil, then [crypto/rand.Reader] is used.
+func GeneratePrivateKey(random io.Reader) (*PrivateKey, error) {
+	if random == nil {
+		random = rand.Reader
 	}
 
 	key := make([]byte, PrivateKeySize)
-	_, err := io.ReadFull(r, key)
+	_, err := io.ReadFull(random, key)
 	if err != nil {
 		return nil, err
 	}
-
-	// See step 2 in https://www.rfc-editor.org/rfc/rfc8032#section-5.1.5.
-	key[0] &= 248
-	key[31] &= 127
-	key[31] |= 64
 
 	return NewPrivateKey(key)
 }
 
 // NewPrivateKey creates a new private key based on the given input.
-//
-// It is expected that the given key is already clamped based on
-// https://www.rfc-editor.org/rfc/rfc8032#section-5.1.5.
 func NewPrivateKey(key []byte) (*PrivateKey, error) {
 	if len(key) != PrivateKeySize {
 		return nil, perrors.ErrInvalidKeyLength(PrivateKeySize, len(key))
@@ -71,28 +67,40 @@ func NewPrivateKey(key []byte) (*PrivateKey, error) {
 		return nil, err
 	}
 
+	// No need to clamp here, as ECDH will take care of it.
 	ecdhKey, err := ecdh.X25519().NewPrivateKey(key)
 	if err != nil {
 		return nil, err
 	}
 
+	privateKey := make([]byte, PrivateKeySize)
+	copy(privateKey, key)
+	// Clamp the given private key.
+	// See step 2 in https://www.rfc-editor.org/rfc/rfc8032#section-5.1.5.
+	privateKey[0] &= 248
+	privateKey[31] &= 63
+	privateKey[31] |= 64
+
 	return &PrivateKey{
-		key:       key,
-		scalarKey: scalarKey,
-		ecdhKey:   ecdhKey,
+		privateKey: privateKey,
+		publicKey:  xtou(scalarKey),
+		scalarKey:  scalarKey,
+		ecdhKey:    ecdhKey,
 	}, nil
 }
 
 // Bytes returns a copy of the private key.
 func (p *PrivateKey) Bytes() []byte {
 	bytes := make([]byte, PrivateKeySize)
-	copy(bytes, p.key)
+	copy(bytes, p.privateKey)
 	return bytes
 }
 
 // PublicKeyBytes returns the public key in the form of a Montgomery u-point.
 func (p *PrivateKey) PublicKeyBytes() []byte {
-	return xtou(p.key)
+	bytes := make([]byte, PublicKeySize)
+	copy(bytes, p.publicKey)
+	return bytes
 }
 
 // Agreement computes the ECDH shared key between the private key and
@@ -110,9 +118,12 @@ func (p *PrivateKey) Agreement(key []byte) ([]byte, error) {
 	return p.ecdhKey.ECDH(publicKey)
 }
 
-// Sign calculates an XEdDSA signature using the X25519 private key directly.
+// Sign calculates an XEdDSA signature using the X25519 private key, directly.
 //
 // The calculated signature is a valid ed25519 signature.
+//
+// It is recommended to use a cryptographic random reader.
+// If random is nil, then [crypto/rand.Reader] is used.
 func (p *PrivateKey) Sign(random io.Reader, messages ...[]byte) ([]byte, error) {
 	if random == nil {
 		random = rand.Reader
@@ -125,7 +136,7 @@ func (p *PrivateKey) Sign(random io.Reader, messages ...[]byte) ([]byte, error) 
 	}
 
 	a := p.scalarKey.Bytes()
-	A := (new(edwards25519.Point)).ScalarBaseMult(p.scalarKey).Bytes()
+	A := new(edwards25519.Point).ScalarBaseMult(p.scalarKey).Bytes()
 
 	digest := make([]byte, 0, sha512.Size)
 	hash := sha512.New()
@@ -142,7 +153,7 @@ func (p *PrivateKey) Sign(random io.Reader, messages ...[]byte) ([]byte, error) 
 	if err != nil {
 		return nil, err
 	}
-	R := (new(edwards25519.Point)).ScalarBaseMult(r).Bytes()
+	R := new(edwards25519.Point).ScalarBaseMult(r).Bytes()
 
 	digest = digest[:0]
 	hash.Reset()
