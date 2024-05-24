@@ -14,6 +14,7 @@ type DJBPublicKey struct {
 	key []byte
 }
 
+// newDJBPublicKey returns a public key based on the given key bytes.
 func newDJBPublicKey(key []byte) (*DJBPublicKey, error) {
 	if len(key) != PublicKeySize {
 		return nil, perrors.ErrInvalidKeyLength(PublicKeySize, len(key))

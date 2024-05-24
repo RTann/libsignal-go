@@ -1,5 +1,3 @@
-// Package curve implements elliptic curve cryptography
-// functions used for the protocol.
 package curve
 
 import "io"
@@ -13,7 +11,7 @@ type KeyPair struct {
 // GenerateKeyPair returns a public/private key pair using the given reader.
 //
 // It is recommended to use a cryptographic random reader.
-// If random is `nil`, then crypto/rand.Reader is used.
+// If random is nil, then [crypto/rand.Reader] is used.
 func GenerateKeyPair(random io.Reader) (*KeyPair, error) {
 	privateKey, err := GeneratePrivateKey(random)
 	if err != nil {
@@ -30,8 +28,8 @@ func GenerateKeyPair(random io.Reader) (*KeyPair, error) {
 
 // NewKeyPair returns a public/private key pair from the given pair.
 //
-// The given pair is expected to represent a valid curve.PrivateKey and
-// curve.PublicKey, respectively.
+// The given pair is expected to represent a valid [curve.PrivateKey] and
+// [curve.PublicKey], respectively.
 func NewKeyPair(privateKey, publicKey []byte) (*KeyPair, error) {
 	private, err := NewPrivateKey(privateKey)
 	if err != nil {
@@ -66,6 +64,9 @@ func (k *KeyPair) Agreement(key PublicKey) ([]byte, error) {
 
 // Sign calculates the digital signature of the messages using
 // the key pair's private key.
+//
+// It is recommended to use a cryptographic random reader.
+// If random is nil, then [crypto/rand.Reader] is used.
 func (k *KeyPair) Sign(random io.Reader, messages ...[]byte) ([]byte, error) {
 	return k.privateKey.Sign(random, messages...)
 }

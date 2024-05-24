@@ -16,7 +16,7 @@ type DJBPrivateKey struct {
 // GeneratePrivateKey generates a private key using the given random reader.
 //
 // It is recommended to use a cryptographic random reader.
-// If random is `nil`, then crypto/rand.Reader is used.
+// If random is nil, then [crypto/rand.Reader] is used.
 func GeneratePrivateKey(random io.Reader) (PrivateKey, error) {
 	privateKey, err := curve25519.GeneratePrivateKey(random)
 	if err != nil {
@@ -29,9 +29,6 @@ func GeneratePrivateKey(random io.Reader) (PrivateKey, error) {
 }
 
 // newDJBPrivateKey returns a private key based on the given key bytes.
-//
-// It is expected that the given key is already clamped based on
-// https://www.rfc-editor.org/rfc/rfc8032#section-5.1.5.
 func newDJBPrivateKey(key []byte) (PrivateKey, error) {
 	privateKey, err := curve25519.NewPrivateKey(key)
 	if err != nil {
