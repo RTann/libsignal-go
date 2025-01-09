@@ -9,7 +9,7 @@ require (
 	github.com/stretchr/testify v1.10.0
 	golang.org/x/crypto v0.32.0
 	golang.org/x/tools v0.28.0
-	google.golang.org/protobuf v1.34.2
+	google.golang.org/protobuf v1.36.2
 )
 
 require (
