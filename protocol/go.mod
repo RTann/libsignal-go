@@ -7,7 +7,7 @@ require (
 	github.com/golang/glog v1.2.4
 	github.com/google/uuid v1.6.0
 	github.com/stretchr/testify v1.10.0
-	golang.org/x/crypto v0.32.0
+	golang.org/x/crypto v0.33.0
 	golang.org/x/tools v0.30.0
 	google.golang.org/protobuf v1.34.2
 )
