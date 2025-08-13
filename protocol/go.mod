@@ -1,6 +1,6 @@
 module github.com/RTann/libsignal-go/protocol
 
-go 1.20
+go 1.23.0
 
 require (
 	filippo.io/edwards25519 v1.1.0
@@ -9,7 +9,7 @@ require (
 	github.com/stretchr/testify v1.10.0
 	golang.org/x/crypto v0.33.0
 	golang.org/x/tools v0.31.0
-	google.golang.org/protobuf v1.34.2
+	google.golang.org/protobuf v1.36.7
 )
 
 require (
