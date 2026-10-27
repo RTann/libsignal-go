@@ -180,6 +180,9 @@ func (s *Session) decryptSignal(ctx context.Context, random io.Reader, ciphertex
 	}
 
 	plaintext, err := s.decryptMessage(random, record, ciphertext.Type(), ciphertext)
+	if err != nil {
+		return nil, err
+	}
 
 	if record.State() == nil {
 		return nil, errors.New("successfully decrypted; must have a current state")
